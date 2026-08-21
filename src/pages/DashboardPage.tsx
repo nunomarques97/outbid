@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Plus, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Company } from '@/mocks/types'
 import { useAuth } from '@/features/auth/useAuth'
@@ -8,9 +8,10 @@ import { useMyCompanies, useCategories, usePlacements, useActiveBids, useAllComp
 import { getPlacementDisplayName } from '@/lib/supabase/queries'
 import { usePlaceBid, useWithdrawBid } from '@/features/dashboard/useDashboardBids'
 import { getRankedBids, isCompanyOutbid } from '@/lib/ranking'
+import { CompanyAvatar } from '@/components/ui/avatar'
 import { CompanySwitcher } from '@/features/companies/CompanySwitcher'
-import { LogoPicker } from '@/features/companies/LogoPicker'
-import { useUploadCompanyLogo } from '@/features/companies/useCompanyLogo'
+import { EditCompanyDialog } from '@/features/companies/EditCompanyDialog'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { PositionCard } from '@/features/dashboard/PositionCard'
 import { OutbidBanner } from '@/features/dashboard/OutbidBanner'
@@ -19,7 +20,6 @@ import { BidAdjustControl } from '@/features/dashboard/BidAdjustControl'
 import { StartBidCard } from '@/features/dashboard/StartBidCard'
 import { SpendOverviewChart } from '@/features/dashboard/SpendOverviewChart'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
-import { buttonVariants } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 
 export function DashboardPage() {
@@ -73,41 +73,38 @@ function NoCompanyState() {
 function DashboardWithCompanySelection({ companies }: { companies: Company[] }) {
   const [selectedId, setSelectedId] = useState(companies[0].id)
   const company = companies.find((c) => c.id === selectedId) ?? companies[0]
-  const logoUpload = useUploadCompanyLogo()
+  const [editOpen, setEditOpen] = useState(false)
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <LogoPicker
-            initials={company.initials}
-            color={company.logoColor}
-            currentLogoUrl={company.logoUrl}
-            disabled={logoUpload.isPending}
-            onFileSelected={(file) =>
-              logoUpload.mutate(
-                { companyId: company.id, file, previousPath: company.logoPath },
-                {
-                  onSuccess: () => toast.success('Logo updated.'),
-                  onError: (err) => toast.error(err instanceof Error ? err.message : 'Could not upload that logo.'),
-                },
-              )
-            }
-          />
+          <CompanyAvatar initials={company.initials} color={company.logoColor} logoUrl={company.logoUrl} size="lg" />
           <div>
             <p className="text-xs uppercase tracking-widest text-fg-subtle">Advertiser dashboard</p>
             <h1 className="text-2xl font-bold tracking-tight text-fg">{company.name}</h1>
           </div>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setEditOpen(true)}>
+            <Pencil className="h-3.5 w-3.5" /> Edit
+          </Button>
         </div>
-        <CompanySwitcher companies={companies} selectedId={company.id} onSelect={setSelectedId} />
+        <div className="flex items-center gap-2">
+          <CompanySwitcher companies={companies} selectedId={company.id} onSelect={setSelectedId} />
+          <Link to="/dashboard/new" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+            <Plus className="h-3.5 w-3.5" /> New company
+          </Link>
+        </div>
       </div>
 
       {/* key={company.id} forces a full remount on switch — without it, a
           child like BidAdjustControl could keep stale local slider state
           across companies if two companies happen to share a bid on the
           same placement.id, since React would otherwise reuse the same
-          keyed list-item instance. */}
+          keyed list-item instance. Also resets EditCompanyDialog's pending
+          logo selection so a half-picked file can never carry over to a
+          different company after switching. */}
       <DashboardContent key={company.id} company={company} />
+      <EditCompanyDialog key={company.id} company={company} open={editOpen} onOpenChange={setEditOpen} />
     </div>
   )
 }
