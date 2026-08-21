@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { Search as SearchIcon, Tag, Flame, X } from 'lucide-react'
-import { useAllCompanies, useCategories, useDeals, useTrends } from '@/lib/supabase/hooks'
+import { useAllCompanies, useCategories, useDeals, useTrends, useAllCompanyRatingSummaries } from '@/lib/supabase/hooks'
 import { CompanyAvatar } from '@/components/ui/avatar'
+import { CompanyRatingInline } from '@/features/reviews/CompanyRatingInline'
 import { Input } from '@/components/ui/input'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 
@@ -14,6 +15,7 @@ export function SearchPage() {
   const categoriesQuery = useCategories()
   const dealsQuery = useDeals()
   const trendsQuery = useTrends()
+  const ratingSummariesQuery = useAllCompanyRatingSummaries()
 
   // Keep the URL in sync (shareable/refreshable) without gating results on submit.
   useEffect(() => {
@@ -144,6 +146,7 @@ export function SearchPage() {
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-fg">{c.name}</p>
                 <p className="truncate text-xs text-fg-muted">{c.tagline}</p>
+                <CompanyRatingInline summary={ratingSummariesQuery.data?.get(c.id)} className="mt-0.5" />
               </div>
             </Link>
           ))}

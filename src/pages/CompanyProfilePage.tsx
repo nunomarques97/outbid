@@ -17,6 +17,8 @@ import { VoteButton } from '@/components/shared/VoteButton'
 import { SaveButton } from '@/components/shared/SaveButton'
 import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
 import { DealCard } from '@/components/shared/DealCard'
+import { CompanyRatingBadge } from '@/features/reviews/CompanyRatingBadge'
+import { CompanyReviewsSection } from '@/features/reviews/CompanyReviewsSection'
 import { buttonVariants } from '@/components/ui/button'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 import { formatCurrency, formatCompactNumber, cn } from '@/lib/utils'
@@ -98,6 +100,9 @@ function CompanyProfileContent({ company }: { company: Company }) {
             {sponsorships.length > 0 && <SponsoredBadge />}
           </div>
           <p className="mt-1 text-fg-muted">{company.tagline}</p>
+          <div className="mt-2">
+            <CompanyRatingBadge companyId={company.id} />
+          </div>
           <div className="mt-3 flex flex-wrap gap-2">
             {companyCategories.map((c) => (
               <Link
@@ -142,6 +147,10 @@ function CompanyProfileContent({ company }: { company: Company }) {
         />
         <Stat label="Founded" value={String(company.foundedYear)} icon={Calendar} />
         <Stat label="Website" value={company.website} icon={Globe} />
+      </div>
+
+      <div className="mt-8">
+        <CompanyReviewsSection companyId={company.id} companyName={company.name} />
       </div>
 
       <div className="mt-8">

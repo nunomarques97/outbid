@@ -316,6 +316,34 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['battle_votes']['Insert']>
         Relationships: []
       }
+      reviews: {
+        Row: {
+          id: string
+          company_id: string
+          user_id: string
+          rating: number
+          title: string
+          body: string
+          author_display_name: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          user_id: string
+          rating: number
+          title: string
+          body: string
+          // Ignored by the DB even if sent — reviews_set_author_name always
+          // overwrites it server-side from the author's own profile.
+          author_display_name?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<{ rating: number; title: string; body: string; updated_at: string }>
+        Relationships: []
+      }
       company_billing_profiles: {
         Row: {
           id: string
@@ -341,7 +369,21 @@ export interface Database {
         Relationships: []
       }
     }
-    Views: Record<string, never>
+    Views: {
+      company_rating_summary: {
+        Row: {
+          company_id: string
+          review_count: number
+          average_rating: number
+          rating_5_count: number
+          rating_4_count: number
+          rating_3_count: number
+          rating_2_count: number
+          rating_1_count: number
+        }
+        Relationships: []
+      }
+    }
     Functions: {
       place_bid: {
         Args: { p_company_id: string; p_placement_id: string; p_amount: number }

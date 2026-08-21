@@ -1,4 +1,5 @@
 import { supabase } from './client'
+import { toReview, type Review } from './queries'
 
 /**
  * Toggle the current user's upvote on a company: adds it if absent, removes
@@ -157,4 +158,62 @@ export async function uploadCompanyLogo(companyId: string, file: File, previousP
   }
 
   return path
+}
+
+// ---------------------------------------------------------------------------
+// Reviews. Length limits live in src/lib/reviewValidation.ts (shared with
+// the form's own validation), and mirror the CHECK constraints in
+// supabase/migrations/*_reviews.sql — the DB constraints are the real
+// enforcement either way.
+// ---------------------------------------------------------------------------
+
+/**
+ * user_id is passed in (the caller's own auth.uid(), from useAuth) rather
+ * than assumed server-side, but that alone would be spoofable from the
+ * client — what actually makes this safe is the reviews table's own RLS
+ * INSERT policy, `with check (user_id = auth.uid())`, which independently
+ * rejects the row if this doesn't match the caller's real authenticated
+ * identity, regardless of what's sent here. author_display_name is
+ * deliberately not sent at all — reviews_set_author_name always derives it
+ * server-side.
+ */
+export async function createReview(input: {
+  companyId: string
+  userId: string
+  rating: number
+  title: string
+  body: string
+}): Promise<Review> {
+  const { data, error } = await supabase
+    .from('reviews')
+    .insert({
+      company_id: input.companyId,
+      user_id: input.userId,
+      rating: input.rating,
+      title: input.title.trim(),
+      body: input.body.trim(),
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return toReview(data)
+}
+
+export async function updateReview(
+  reviewId: string,
+  input: { rating: number; title: string; body: string },
+): Promise<Review> {
+  const { data, error } = await supabase
+    .from('reviews')
+    .update({ rating: input.rating, title: input.title.trim(), body: input.body.trim() })
+    .eq('id', reviewId)
+    .select()
+    .single()
+  if (error) throw error
+  return toReview(data)
+}
+
+export async function deleteReview(reviewId: string): Promise<void> {
+  const { error } = await supabase.from('reviews').delete().eq('id', reviewId)
+  if (error) throw error
 }

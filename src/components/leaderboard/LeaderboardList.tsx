@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useCompaniesByCategory, usePlacements, useActiveBids } from '@/lib/supabase/hooks'
+import { useCompaniesByCategory, usePlacements, useActiveBids, useAllCompanyRatingSummaries } from '@/lib/supabase/hooks'
 import { getPlacementForCategory } from '@/lib/supabase/queries'
 import { getSponsoredSlice, getOrganicRanking } from '@/lib/ranking'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
@@ -15,6 +15,7 @@ export function LeaderboardList({ categoryId, organicLimit }: LeaderboardListPro
   const companiesQuery = useCompaniesByCategory(categoryId)
   const placementsQuery = usePlacements()
   const bidsQuery = useActiveBids()
+  const ratingSummariesQuery = useAllCompanyRatingSummaries()
 
   if (companiesQuery.isLoading || placementsQuery.isLoading || bidsQuery.isLoading) {
     return <LoadingState label="Loading rankings…" />
@@ -39,7 +40,15 @@ export function LeaderboardList({ categoryId, organicLimit }: LeaderboardListPro
             {sponsored.map((bid) => {
               const company = companies.find((c) => c.id === bid.companyId)
               if (!company) return null
-              return <SponsoredEntryCard key={bid.id} company={company} rank={bid.rank} bidAmount={bid.amount} />
+              return (
+                <SponsoredEntryCard
+                  key={bid.id}
+                  company={company}
+                  rank={bid.rank}
+                  bidAmount={bid.amount}
+                  ratingSummary={ratingSummariesQuery.data?.get(company.id)}
+                />
+              )
             })}
           </div>
         </div>
@@ -54,7 +63,12 @@ export function LeaderboardList({ categoryId, organicLimit }: LeaderboardListPro
         ) : (
           <div className="flex flex-col gap-3">
             {organic.map((entry, i) => (
-              <OrganicEntryCard key={entry.company.id} company={entry.company} rank={i + 1} />
+              <OrganicEntryCard
+                key={entry.company.id}
+                company={entry.company}
+                rank={i + 1}
+                ratingSummary={ratingSummariesQuery.data?.get(entry.company.id)}
+              />
             ))}
           </div>
         )}

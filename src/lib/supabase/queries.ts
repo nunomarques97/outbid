@@ -17,6 +17,8 @@ type BattleRow = Database['public']['Tables']['battles']['Row']
 type DealRow = Database['public']['Tables']['deals']['Row']
 type TrendRow = Database['public']['Tables']['trends']['Row']
 type NotificationRow = Database['public']['Tables']['notifications']['Row']
+type ReviewRow = Database['public']['Tables']['reviews']['Row']
+type CompanyRatingSummaryRow = Database['public']['Views']['company_rating_summary']['Row']
 
 // ---------------------------------------------------------------------------
 // Row -> domain type adapters
@@ -457,4 +459,111 @@ export async function getCompanyBillingProfile(companyId: string) {
     .maybeSingle()
   if (error) throw error
   return data
+}
+
+// ---------------------------------------------------------------------------
+// Reviews — the customer-facing reputation system. No mock counterpart (same
+// reasoning as Notification above): this is a purely Supabase-era concept,
+// so its domain type lives here rather than in src/mocks/types.ts.
+// ---------------------------------------------------------------------------
+
+export interface Review {
+  id: string
+  companyId: string
+  userId: string
+  rating: number
+  title: string
+  body: string
+  authorDisplayName: string
+  createdAt: string
+  updatedAt: string
+}
+
+export function toReview(row: ReviewRow): Review {
+  return {
+    id: row.id,
+    companyId: row.company_id,
+    userId: row.user_id,
+    rating: row.rating,
+    title: row.title,
+    body: row.body,
+    authorDisplayName: row.author_display_name,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+export interface CompanyRatingSummary {
+  companyId: string
+  reviewCount: number
+  averageRating: number
+  /** Keyed by star value (5 down to 1) rather than a fixed-shape object, so rendering the distribution is a simple loop. */
+  countsByStar: Record<1 | 2 | 3 | 4 | 5, number>
+}
+
+function emptyRatingSummary(companyId: string): CompanyRatingSummary {
+  return { companyId, reviewCount: 0, averageRating: 0, countsByStar: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } }
+}
+
+function toRatingSummary(row: CompanyRatingSummaryRow): CompanyRatingSummary {
+  return {
+    companyId: row.company_id,
+    reviewCount: row.review_count,
+    averageRating: row.average_rating,
+    countsByStar: {
+      5: row.rating_5_count,
+      4: row.rating_4_count,
+      3: row.rating_3_count,
+      2: row.rating_2_count,
+      1: row.rating_1_count,
+    },
+  }
+}
+
+/** Newest first — matches the reviews_company_idx (company_id, created_at desc) index. */
+export async function getReviewsForCompany(companyId: string): Promise<Review[]> {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('*')
+    .eq('company_id', companyId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data.map(toReview)
+}
+
+/** null when this user hasn't reviewed this company yet — the normal case, not an error. */
+export async function getMyReviewForCompany(companyId: string, userId: string): Promise<Review | null> {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('*')
+    .eq('company_id', companyId)
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (error) throw error
+  return data ? toReview(data) : null
+}
+
+/** A company with zero reviews has no row in the view at all — treated as a real, valid "no reviews yet" result, not an error. */
+export async function getCompanyRatingSummary(companyId: string): Promise<CompanyRatingSummary> {
+  const { data, error } = await supabase
+    .from('company_rating_summary')
+    .select('*')
+    .eq('company_id', companyId)
+    .maybeSingle()
+  if (error) throw error
+  return data ? toRatingSummary(data) : emptyRatingSummary(companyId)
+}
+
+/**
+ * Every company's rating summary in one request, for surfaces that show many
+ * companies at once (search results, leaderboard entries) — same "fetch the
+ * whole small table, filter client-side" shape as getAllCompanies, so this
+ * composes with however that page already narrows its company list down.
+ */
+export async function getAllCompanyRatingSummaries(): Promise<Map<string, CompanyRatingSummary>> {
+  const { data, error } = await supabase.from('company_rating_summary').select('*')
+  if (error) throw error
+  const map = new Map<string, CompanyRatingSummary>()
+  for (const row of data) map.set(row.company_id, toRatingSummary(row))
+  return map
 }

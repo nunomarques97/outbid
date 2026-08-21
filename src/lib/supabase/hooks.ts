@@ -12,6 +12,7 @@ import {
   getBattleById,
   getDeals,
   getTrends,
+  getAllCompanyRatingSummaries,
 } from './queries'
 
 /**
@@ -93,4 +94,16 @@ export function useDeals() {
 
 export function useTrends() {
   return useQuery({ queryKey: ['trends'], queryFn: getTrends, staleTime: STALE_TIME })
+}
+
+/**
+ * Every company's rating summary at once, for discovery surfaces (search
+ * results, leaderboard entries) showing many companies side by side — see
+ * getAllCompanyRatingSummaries for why "fetch everything" is the right
+ * shape here. The company profile page uses its own single-company query
+ * instead (see features/reviews/useReviews.ts), since that one needs to
+ * invalidate cleanly after this exact user posts/edits/deletes a review.
+ */
+export function useAllCompanyRatingSummaries() {
+  return useQuery({ queryKey: ['ratingSummaries'], queryFn: getAllCompanyRatingSummaries, staleTime: STALE_TIME })
 }

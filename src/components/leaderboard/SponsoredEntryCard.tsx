@@ -1,16 +1,19 @@
 import { Link } from 'react-router-dom'
 import type { Company } from '@/mocks/types'
+import type { CompanyRatingSummary } from '@/lib/supabase/queries'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
+import { CompanyRatingInline } from '@/features/reviews/CompanyRatingInline'
 import { formatCurrency, cn } from '@/lib/utils'
 
 interface SponsoredEntryCardProps {
   company: Company
   rank: number
   bidAmount: number
+  ratingSummary?: CompanyRatingSummary
 }
 
-export function SponsoredEntryCard({ company, rank, bidAmount }: SponsoredEntryCardProps) {
+export function SponsoredEntryCard({ company, rank, bidAmount, ratingSummary }: SponsoredEntryCardProps) {
   return (
     <Link
       to={`/companies/${company.slug}`}
@@ -27,6 +30,7 @@ export function SponsoredEntryCard({ company, rank, bidAmount }: SponsoredEntryC
         </div>
         <p className="mt-1 truncate font-semibold text-fg">{company.name}</p>
         <p className="truncate text-sm text-fg-muted">{company.tagline}</p>
+        <CompanyRatingInline summary={ratingSummary} className="mt-1" />
       </div>
       <div className="shrink-0 text-right">
         <p className="text-[11px] uppercase tracking-wide text-fg-subtle">Winning bid</p>
