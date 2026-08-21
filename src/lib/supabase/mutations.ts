@@ -1,0 +1,160 @@
+import { supabase } from './client'
+
+/**
+ * Toggle the current user's upvote on a company: adds it if absent, removes
+ * it if present. Relies on company_votes' UNIQUE(company_id, user_id) and
+ * its RLS policies (a user may only touch their own vote row) — this
+ * function does not, and does not need to, do its own duplicate/ownership
+ * checking client-side.
+ */
+export async function toggleCompanyVote(companyId: string, userId: string) {
+  const { data: existing, error: selectError } = await supabase
+    .from('company_votes')
+    .select('id')
+    .eq('company_id', companyId)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (selectError) throw selectError
+
+  if (existing) {
+    const { error } = await supabase.from('company_votes').delete().eq('id', existing.id)
+    if (error) throw error
+    return { voted: false }
+  }
+
+  const { error } = await supabase.from('company_votes').insert({ company_id: companyId, user_id: userId })
+  if (error) throw error
+  return { voted: true }
+}
+
+/**
+ * Cast (or change) a user's vote in a battle. battle_votes' UNIQUE(battle_id,
+ * user_id) constraint is what actually makes this mutually exclusive at the
+ * database level — voting for the other side is an UPDATE of `side`, not a
+ * second row; voting the same side again removes the vote entirely,
+ * matching the existing client-side voteBattle() toggle UX in
+ * src/store/useSession.ts.
+ */
+export async function castBattleVote(battleId: string, userId: string, side: 'a' | 'b') {
+  const { data: existing, error: selectError } = await supabase
+    .from('battle_votes')
+    .select('id, side')
+    .eq('battle_id', battleId)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (selectError) throw selectError
+
+  if (existing?.side === side) {
+    const { error } = await supabase.from('battle_votes').delete().eq('id', existing.id)
+    if (error) throw error
+    return { side: null }
+  }
+
+  if (existing) {
+    const { error } = await supabase.from('battle_votes').update({ side }).eq('id', existing.id)
+    if (error) throw error
+    return { side }
+  }
+
+  const { error } = await supabase.from('battle_votes').insert({ battle_id: battleId, user_id: userId, side })
+  if (error) throw error
+  return { side }
+}
+
+/**
+ * The one sanctioned way to set a company's bid — calls the place_bid RPC
+ * (see supabase/migrations/*_rpc_functions.sql) rather than upserting the
+ * bids table directly, so authorization and the bid-history/outbid triggers
+ * all happen server-side in one transaction. Not wired into the live
+ * dashboard yet — see the Phase 3 report for why.
+ */
+export async function placeBid(companyId: string, placementId: string, amount: number) {
+  const { data, error } = await supabase.rpc('place_bid', {
+    p_company_id: companyId,
+    p_placement_id: placementId,
+    p_amount: amount,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function withdrawBid(companyId: string, placementId: string) {
+  const { data, error } = await supabase.rpc('withdraw_bid', {
+    p_company_id: companyId,
+    p_placement_id: placementId,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function createCompany(input: {
+  slug: string
+  name: string
+  initials: string
+  logoColor: string
+  tagline: string
+  description: string
+  website: string
+  foundedYear: number
+}) {
+  const { data, error } = await supabase
+    .from('companies')
+    .insert({
+      slug: input.slug,
+      name: input.name,
+      initials: input.initials,
+      logo_color: input.logoColor,
+      tagline: input.tagline,
+      description: input.description,
+      website: input.website,
+      founded_year: input.foundedYear,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export const LOGO_MAX_BYTES = 2 * 1024 * 1024 // 2MB
+export const LOGO_ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const
+
+/**
+ * Uploads to a fresh random path every time (never overwrites in place),
+ * points companies.logo_path at it, then best-effort deletes whatever the
+ * company's previous logo path was. Membership/authorization is enforced
+ * entirely by the storage RLS policies (is_company_member, same helper
+ * every other write policy uses) and the companies UPDATE policy — nothing
+ * re-checked here.
+ */
+export async function uploadCompanyLogo(companyId: string, file: File, previousPath?: string | null): Promise<string> {
+  if (!LOGO_ALLOWED_TYPES.includes(file.type as (typeof LOGO_ALLOWED_TYPES)[number])) {
+    throw new Error('Logo must be a PNG, JPEG, or WebP image.')
+  }
+  if (file.size > LOGO_MAX_BYTES) {
+    throw new Error('Logo must be smaller than 2MB.')
+  }
+
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'png'
+  const path = `${companyId}/${crypto.randomUUID()}.${ext}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('company-logos')
+    .upload(path, file, { contentType: file.type })
+  if (uploadError) throw uploadError
+
+  const { error: updateError } = await supabase.from('companies').update({ logo_path: path }).eq('id', companyId)
+  if (updateError) {
+    // Roll back the upload rather than leave an orphaned, unreferenced file.
+    await supabase.storage.from('company-logos').remove([path]).catch(() => {})
+    throw updateError
+  }
+
+  if (previousPath) {
+    await supabase.storage.from('company-logos').remove([previousPath]).catch(() => {})
+  }
+
+  return path
+}

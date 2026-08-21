@@ -1,0 +1,361 @@
+/**
+ * Hand-authored to match supabase/migrations/*.sql exactly, in the same
+ * shape `supabase gen types typescript` would produce. There is no live
+ * project to generate these from yet — once one exists, regenerate with:
+ *
+ *   npx supabase gen types typescript --project-id <ref> > src/lib/supabase/database.types.ts
+ *
+ * and this file becomes redundant. Keep it in sync with the migrations
+ * until then.
+ *
+ * Every table below carries `Relationships: []` (rather than real foreign
+ * key metadata) because @supabase/postgrest-js's GenericTable type requires
+ * that field to exist for its generics to resolve at all — without it,
+ * every Row/Insert/Update collapses to `never`. Real codegen would populate
+ * this with actual FK metadata for typed embedded-resource selects; hand
+ * authoring that isn't worth it here since it's purely a type-level nicety.
+ */
+
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+
+export type PlacementType = 'category_leaderboard' | 'homepage_featured' | 'comparison_sponsor' | 'deal_spotlight'
+export type BidStatus = 'active' | 'withdrawn'
+export type CompanyRole = 'owner' | 'editor'
+export type NotificationType = 'outbid' | 'bid_confirmed'
+export type BattleSide = 'a' | 'b'
+export type BillingStatus = 'inactive' | 'active'
+
+export interface Database {
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          id: string
+          display_name: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          display_name: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<{
+          id: string
+          display_name: string
+          created_at: string
+          updated_at: string
+        }>
+        Relationships: []
+      }
+      companies: {
+        Row: {
+          id: string
+          slug: string
+          name: string
+          initials: string
+          logo_color: string
+          tagline: string
+          description: string
+          website: string
+          founded_year: number
+          organic_votes_baseline: number
+          is_seed: boolean
+          // Nullable/possibly-absent in practice: this column shipped in a
+          // migration added after this project's first push to staging, so
+          // rows fetched before that migration is (re-)applied there won't
+          // include it at all — PostgREST simply omits the key, which JS
+          // sees as `undefined`, not `[]`. Widened here so the adapter in
+          // lib/supabase/queries.ts is forced to handle it rather than the
+          // type lying about a guarantee the live schema may not have yet.
+          tags: string[] | null
+          // Storage path within the company-logos bucket, e.g.
+          // "<company_id>/<random>.png" — null means no logo uploaded yet
+          // (fall back to the initials avatar). Never a full URL: the
+          // frontend derives the public URL at read time.
+          logo_path: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          slug: string
+          name: string
+          initials: string
+          logo_color: string
+          tagline: string
+          description: string
+          website: string
+          founded_year: number
+          organic_votes_baseline?: number
+          is_seed?: boolean
+          tags?: string[] | null
+          logo_path?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['companies']['Insert']>
+        Relationships: []
+      }
+      company_members: {
+        Row: {
+          id: string
+          company_id: string
+          user_id: string
+          role: CompanyRole
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          user_id: string
+          role: CompanyRole
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['company_members']['Insert']>
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          id: string
+          slug: string
+          name: string
+          icon: string
+          description: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          slug: string
+          name: string
+          icon: string
+          description: string
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['categories']['Insert']>
+        Relationships: []
+      }
+      company_categories: {
+        Row: { company_id: string; category_id: string }
+        Insert: { company_id: string; category_id: string }
+        Update: Partial<{ company_id: string; category_id: string }>
+        Relationships: []
+      }
+      placements: {
+        Row: {
+          id: string
+          type: PlacementType
+          category_id: string | null
+          name: string
+          max_sponsored_slots: number
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          type: PlacementType
+          category_id?: string | null
+          name: string
+          max_sponsored_slots?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['placements']['Insert']>
+        Relationships: []
+      }
+      battles: {
+        Row: {
+          id: string
+          company_a_id: string
+          company_b_id: string
+          criteria: Json
+          is_seed: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          company_a_id: string
+          company_b_id: string
+          criteria?: Json
+          is_seed?: boolean
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['battles']['Insert']>
+        Relationships: []
+      }
+      deals: {
+        Row: {
+          id: string
+          company_id: string
+          title: string
+          discount_label: string
+          description: string
+          expires_at: string
+          claim_count_baseline: number
+          is_seed: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          title: string
+          discount_label: string
+          description: string
+          expires_at: string
+          claim_count_baseline?: number
+          is_seed?: boolean
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['deals']['Insert']>
+        Relationships: []
+      }
+      trends: {
+        Row: {
+          id: string
+          title: string
+          summary: string
+          trend_score: number
+          is_seed: boolean
+          published_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          summary: string
+          trend_score?: number
+          is_seed?: boolean
+          published_at?: string
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['trends']['Insert']>
+        Relationships: []
+      }
+      trend_companies: {
+        Row: { trend_id: string; company_id: string }
+        Insert: { trend_id: string; company_id: string }
+        Update: Partial<{ trend_id: string; company_id: string }>
+        Relationships: []
+      }
+      bids: {
+        Row: {
+          id: string
+          company_id: string
+          placement_id: string
+          amount: number
+          status: BidStatus
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          placement_id: string
+          amount: number
+          status?: BidStatus
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['bids']['Insert']>
+        Relationships: []
+      }
+      bid_history: {
+        Row: {
+          id: string
+          bid_id: string
+          company_id: string
+          placement_id: string
+          previous_amount: number | null
+          new_amount: number
+          changed_at: string
+        }
+        Insert: {
+          id?: string
+          bid_id: string
+          company_id: string
+          placement_id: string
+          previous_amount?: number | null
+          new_amount: number
+          changed_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['bid_history']['Insert']>
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          id: string
+          company_id: string
+          type: NotificationType
+          placement_id: string | null
+          payload: Json
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          type: NotificationType
+          placement_id?: string | null
+          payload?: Json
+          read_at?: string | null
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['notifications']['Insert']>
+        Relationships: []
+      }
+      company_votes: {
+        Row: { id: string; company_id: string; user_id: string; created_at: string }
+        Insert: { id?: string; company_id: string; user_id: string; created_at?: string }
+        Update: Partial<Database['public']['Tables']['company_votes']['Insert']>
+        Relationships: []
+      }
+      battle_votes: {
+        Row: { id: string; battle_id: string; user_id: string; side: BattleSide; created_at: string }
+        Insert: { id?: string; battle_id: string; user_id: string; side: BattleSide; created_at?: string }
+        Update: Partial<Database['public']['Tables']['battle_votes']['Insert']>
+        Relationships: []
+      }
+      company_billing_profiles: {
+        Row: {
+          id: string
+          company_id: string
+          billing_email: string | null
+          currency: string
+          status: BillingStatus
+          billing_provider_customer_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          billing_email?: string | null
+          currency?: string
+          status?: BillingStatus
+          billing_provider_customer_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['company_billing_profiles']['Insert']>
+        Relationships: []
+      }
+    }
+    Views: Record<string, never>
+    Functions: {
+      place_bid: {
+        Args: { p_company_id: string; p_placement_id: string; p_amount: number }
+        Returns: Database['public']['Tables']['bids']['Row']
+      }
+      withdraw_bid: {
+        Args: { p_company_id: string; p_placement_id: string }
+        Returns: Database['public']['Tables']['bids']['Row']
+      }
+      is_company_member: {
+        Args: { p_company_id: string; p_roles?: CompanyRole[] }
+        Returns: boolean
+      }
+    }
+    Enums: Record<string, never>
+  }
+}
