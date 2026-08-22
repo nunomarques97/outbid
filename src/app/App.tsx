@@ -17,6 +17,8 @@ import { DashboardPage } from '@/pages/DashboardPage'
 import { CreateCompanyPage } from '@/pages/CreateCompanyPage'
 import { AuthCallbackPage } from '@/pages/AuthCallbackPage'
 import { UserProfilePage } from '@/pages/UserProfilePage'
+import { PrivacyPage } from '@/pages/PrivacyPage'
+import { TermsPage } from '@/pages/TermsPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 
 const queryClient = new QueryClient()
@@ -42,6 +44,8 @@ export function App() {
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/dashboard/new" element={<CreateCompanyPage />} />
                 <Route path="/auth/callback" element={<AuthCallbackPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/terms" element={<TermsPage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
             </Routes>

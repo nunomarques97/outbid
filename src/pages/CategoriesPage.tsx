@@ -2,10 +2,12 @@ import { Link } from 'react-router-dom'
 import * as Icons from 'lucide-react'
 import { useCategories, useAllCompanies } from '@/lib/supabase/hooks'
 import { LoadingState, ErrorState, EmptyState } from '@/components/shared/QueryStates'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 export function CategoriesPage() {
   const categoriesQuery = useCategories()
   const companiesQuery = useAllCompanies()
+  useDocumentTitle('Categories')
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">

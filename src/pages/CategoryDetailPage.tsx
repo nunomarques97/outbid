@@ -15,19 +15,21 @@ import { getCategoryRanking, CATEGORY_SPONSORED_SLOTS } from '@/lib/ranking'
 import { LeaderboardList } from '@/components/leaderboard/LeaderboardList'
 import { RankingExplainer } from '@/components/shared/RankingExplainer'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 import { formatCompactNumber } from '@/lib/utils'
 
 export function CategoryDetailPage() {
   const { slug } = useParams()
   const categoriesQuery = useCategories()
 
-  if (categoriesQuery.isLoading) return <LoadingState label="Loading category…" />
-  if (categoriesQuery.isError) return <ErrorState message="Couldn't load this category." />
-
   // An archived category (merged into a broader one) is treated as
   // not-found — it's no longer a valid discovery destination, even for an
   // old bookmarked/shared link.
   const category = (categoriesQuery.data ?? []).find((c) => c.slug === slug && !c.isArchived)
+  useDocumentTitle(category?.name)
+
+  if (categoriesQuery.isLoading) return <LoadingState label="Loading category…" />
+  if (categoriesQuery.isError) return <ErrorState message="Couldn't load this category." />
   if (!category) return <Navigate to="/categories" replace />
 
   return <CategoryDetailContent categoryId={category.id} categoryName={category.name} categoryDescription={category.description} categoryIcon={category.icon} />

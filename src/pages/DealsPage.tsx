@@ -2,10 +2,12 @@ import { useState, type ReactNode } from 'react'
 import { useDeals, useAllCompanies, useCategories } from '@/lib/supabase/hooks'
 import { DealCard } from '@/components/shared/DealCard'
 import { LoadingState, ErrorState, EmptyState } from '@/components/shared/QueryStates'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 import { cn } from '@/lib/utils'
 
 export function DealsPage() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  useDocumentTitle('Deals')
 
   const dealsQuery = useDeals()
   const companiesQuery = useAllCompanies()

@@ -7,6 +7,7 @@ import { CompanyAvatar } from '@/components/ui/avatar'
 import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
 import { Select } from '@/components/ui/select'
 import { LoadingState, ErrorState, EmptyState } from '@/components/shared/QueryStates'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 import { formatCurrency } from '@/lib/utils'
 
 /**
@@ -23,6 +24,7 @@ export function TopBiddersPage() {
   const placementsQuery = usePlacements()
   const bidsQuery = useActiveBids()
   const [categoryId, setCategoryId] = useState('')
+  useDocumentTitle('Top Bidders')
 
   const loading =
     categoriesQuery.isLoading || companiesQuery.isLoading || placementsQuery.isLoading || bidsQuery.isLoading

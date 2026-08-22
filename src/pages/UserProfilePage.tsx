@@ -8,6 +8,7 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { LoadingState } from '@/components/shared/QueryStates'
 import { EditProfileDialog } from '@/features/profile/EditProfileDialog'
 import { ProfileReviewsSection } from '@/features/profile/ProfileReviewsSection'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 function formatJoinedDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'long' })
@@ -18,6 +19,7 @@ export function UserProfilePage() {
   const { user } = useAuth()
   const profileQuery = usePublicProfile(username)
   const [editOpen, setEditOpen] = useState(false)
+  useDocumentTitle(profileQuery.data ? `${profileQuery.data.displayName} (@${profileQuery.data.username})` : undefined)
 
   if (profileQuery.isLoading) {
     return (

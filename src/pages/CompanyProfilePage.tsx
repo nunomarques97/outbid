@@ -25,11 +25,13 @@ import { CompanyRatingBadge } from '@/features/reviews/CompanyRatingBadge'
 import { CompanyReviewsSection } from '@/features/reviews/CompanyReviewsSection'
 import { buttonVariants } from '@/components/ui/button'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 import { formatCurrency, formatCompactNumber, cn } from '@/lib/utils'
 
 export function CompanyProfilePage() {
   const { slug } = useParams()
   const companyQuery = useCompany(slug ?? '')
+  useDocumentTitle(companyQuery.data?.name)
 
   if (companyQuery.isLoading) return <LoadingState label="Loading company…" />
   if (companyQuery.isError) return <ErrorState message="Couldn't load this company." />

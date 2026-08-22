@@ -22,13 +22,17 @@ export function Footer() {
             <Link to="/dashboard" className="text-fg-muted hover:text-fg">For Businesses</Link>
           </div>
         </div>
-        <div className="flex flex-col gap-2 border-t border-border pt-6 text-xs text-fg-subtle sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-t border-border pt-6 text-xs text-fg-subtle sm:flex-row sm:items-center sm:justify-between">
           <p>© 2026 Repcastr. Companies and deals shown are example listings for this preview — your account, reviews, and saved items are real.</p>
-          <p className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-sponsored" /> Sponsored
-            <span className="mx-1">·</span>
-            <span className="h-1.5 w-1.5 rounded-full bg-organic" /> Community ranked
-          </p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <Link to="/privacy" className="hover:text-fg">Privacy</Link>
+            <Link to="/terms" className="hover:text-fg">Terms</Link>
+            <p className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-sponsored" /> Sponsored
+              <span className="mx-1">·</span>
+              <span className="h-1.5 w-1.5 rounded-full bg-organic" /> Community ranked
+            </p>
+          </div>
         </div>
       </div>
     </footer>
