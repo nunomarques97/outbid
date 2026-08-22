@@ -22,7 +22,7 @@ export function Footer() {
           </div>
         </div>
         <div className="flex flex-col gap-2 border-t border-border pt-6 text-xs text-fg-subtle sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 Outbid. Prototype build — all companies and data shown are fictional.</p>
+          <p>© 2026 Outbid. Companies and deals shown are example listings for this preview — your account, reviews, and saved items are real.</p>
           <p className="flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-sponsored" /> Sponsored
             <span className="mx-1">·</span>

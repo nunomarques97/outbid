@@ -69,6 +69,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
   }
 
+  /**
+   * Supabase emails a link back to /auth/callback carrying a recovery
+   * token; supabase-js's detectSessionInUrl picks it up automatically and
+   * fires a PASSWORD_RECOVERY auth event (see AuthCallbackPage, which
+   * listens for that event directly rather than through this context —
+   * it's a one-page concern, not something every consumer of useAuth needs
+   * to know about).
+   */
+  async function resetPassword(email: string) {
+    if (!isSupabaseConfigured) throw new Error(NOT_CONFIGURED_MESSAGE)
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    })
+    if (error) throw error
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -80,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn,
         signInWithGoogle,
         signOut,
+        resetPassword,
       }}
     >
       {children}

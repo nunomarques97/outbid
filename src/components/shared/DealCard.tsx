@@ -69,7 +69,7 @@ export function DealCard({ deal, company }: { deal: Deal; company: Company }) {
       <div className="mt-4 flex items-center justify-between gap-3">
         <span className="flex items-center gap-1 text-xs text-fg-subtle">
           <Clock className="h-3.5 w-3.5" />
-          {left > 0 ? `Ends in ${left}d` : 'Ends today'}
+          {expired ? 'Expired' : left > 0 ? `Ends in ${left}d` : 'Ends today'}
         </span>
         {expired ? (
           <Button size="sm" variant="secondary" disabled>

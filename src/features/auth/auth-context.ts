@@ -10,6 +10,7 @@ export interface AuthContextValue {
   signIn: (email: string, password: string) => Promise<void>
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
+  resetPassword: (email: string) => Promise<void>
 }
 
 export const NOT_CONFIGURED_MESSAGE =

@@ -309,11 +309,33 @@ async function getDealClaimCounts(dealIds: string[]): Promise<Map<string, number
   return new Map(data.map((row) => [row.deal_id, row.claim_count]))
 }
 
+/**
+ * Sorting purely by expires_at ascending (the previous behavior) means an
+ * expired deal — whose date is now in the past — sorts as if it were the
+ * SOONEST-expiring, i.e. first. That silently pushes expired offers to the
+ * very top of /deals and into the homepage's "Live deals" teaser (which
+ * only takes the first 3) as time passes, which is exactly the kind of
+ * thing that erodes trust. Active deals (soonest-expiring first) always
+ * sort ahead of every expired one; expired deals are still included
+ * (DealCard shows them as "Expired" rather than hiding them, since a
+ * customer who claimed one should still be able to find it on /saved)
+ * but pushed to the end, oldest-expired last.
+ */
+function sortDealsForDisplay(deals: Deal[]): Deal[] {
+  const now = Date.now()
+  return [...deals].sort((a, b) => {
+    const aExpired = new Date(a.expiresAt).getTime() <= now
+    const bExpired = new Date(b.expiresAt).getTime() <= now
+    if (aExpired !== bExpired) return aExpired ? 1 : -1
+    return new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime()
+  })
+}
+
 export async function getDeals(): Promise<Deal[]> {
   const { data, error } = await supabase.from('deals').select('*').order('expires_at')
   if (error) throw error
   const counts = await getDealClaimCounts(data.map((d) => d.id))
-  return data.map((row) => toDeal(row, counts.get(row.id) ?? 0))
+  return sortDealsForDisplay(data.map((row) => toDeal(row, counts.get(row.id) ?? 0)))
 }
 
 // ---------------------------------------------------------------------------
