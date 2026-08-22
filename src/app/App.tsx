@@ -15,6 +15,7 @@ import { DealsPage } from '@/pages/DealsPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { CreateCompanyPage } from '@/pages/CreateCompanyPage'
 import { AuthCallbackPage } from '@/pages/AuthCallbackPage'
+import { UserProfilePage } from '@/pages/UserProfilePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 
 const queryClient = new QueryClient()
@@ -32,6 +33,7 @@ export function App() {
                 <Route path="/categories/:slug" element={<CategoryDetailPage />} />
                 <Route path="/search" element={<SearchPage />} />
                 <Route path="/companies/:slug" element={<CompanyProfilePage />} />
+                <Route path="/users/:username" element={<UserProfilePage />} />
                 <Route path="/saved" element={<SavedPage />} />
                 <Route path="/battles/:id" element={<BattlePage />} />
                 <Route path="/deals" element={<DealsPage />} />

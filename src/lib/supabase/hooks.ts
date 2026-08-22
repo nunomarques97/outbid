@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/useAuth'
 import {
   getCategories,
@@ -14,6 +14,11 @@ import {
   getTrends,
   getAllCompanyRatingSummaries,
   getBidPaymentsForCompany,
+  getPublicProfileByUsername,
+  getUserInterestCategoryIds,
+  getReviewsByUserPaginated,
+  searchProfiles,
+  getReviewAuthorInfoByIds,
 } from './queries'
 
 /**
@@ -121,5 +126,58 @@ export function useBidPayments(companyId: string | undefined) {
     queryFn: () => getBidPaymentsForCompany(companyId!),
     staleTime: STALE_TIME,
     enabled: Boolean(companyId),
+  })
+}
+
+/**
+ * A public customer profile by username — returns null for both "doesn't
+ * exist" and "private, and you're not the owner" (RLS makes those
+ * indistinguishable on purpose, see getPublicProfileByUsername).
+ */
+export function usePublicProfile(username: string | undefined) {
+  return useQuery({
+    queryKey: ['publicProfile', username],
+    queryFn: () => getPublicProfileByUsername(username!),
+    enabled: Boolean(username),
+  })
+}
+
+export function useUserInterests(userId: string | undefined) {
+  return useQuery({
+    queryKey: ['userInterests', userId],
+    queryFn: () => getUserInterestCategoryIds(userId!),
+    enabled: Boolean(userId),
+  })
+}
+
+const REVIEW_PAGE_SIZE = 5
+
+/** "Load more" pagination for a public profile's review list — never fetches the whole history at once. */
+export function useUserReviews(userId: string | undefined) {
+  return useInfiniteQuery({
+    queryKey: ['userReviews', userId],
+    queryFn: ({ pageParam }) => getReviewsByUserPaginated(userId!, REVIEW_PAGE_SIZE, pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => (lastPage.hasMore ? allPages.length * REVIEW_PAGE_SIZE : undefined),
+    enabled: Boolean(userId),
+  })
+}
+
+export function useSearchProfiles(query: string) {
+  const needle = query.trim()
+  return useQuery({
+    queryKey: ['searchProfiles', needle],
+    queryFn: () => searchProfiles(needle),
+    enabled: needle.length > 0,
+  })
+}
+
+/** Powers clickable review-author links + their real avatar — see getReviewAuthorInfoByIds for why a missing id just means "don't link, use the default avatar." */
+export function useReviewAuthors(userIds: string[]) {
+  const key = [...new Set(userIds)].sort().join(',')
+  return useQuery({
+    queryKey: ['reviewAuthors', key],
+    queryFn: () => getReviewAuthorInfoByIds(userIds),
+    enabled: userIds.length > 0,
   })
 }

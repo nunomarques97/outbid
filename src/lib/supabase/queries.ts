@@ -20,6 +20,7 @@ type NotificationRow = Database['public']['Tables']['notifications']['Row']
 type ReviewRow = Database['public']['Tables']['reviews']['Row']
 type CompanyRatingSummaryRow = Database['public']['Views']['company_rating_summary']['Row']
 type BidPaymentRow = Database['public']['Tables']['bid_payments']['Row']
+type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
 // ---------------------------------------------------------------------------
 // Row -> domain type adapters
@@ -681,6 +682,13 @@ export async function getMyDisplayName(userId: string): Promise<string> {
   return data.display_name
 }
 
+/** For linking "Profile" in the account dropdown to /users/:username without needing the full profile object. */
+export async function getMyUsername(userId: string): Promise<string> {
+  const { data, error } = await supabase.from('profiles').select('username').eq('id', userId).single()
+  if (error) throw error
+  return data.username
+}
+
 // ---------------------------------------------------------------------------
 // Bid payments — read-only history of one-time Stripe payments. No mock
 // counterpart (same reasoning as Review/Notification above): this is a
@@ -722,4 +730,220 @@ export async function getBidPaymentsForCompany(companyId: string): Promise<BidPa
     .order('created_at', { ascending: false })
   if (error) throw error
   return data.map(toBidPayment)
+}
+
+// ---------------------------------------------------------------------------
+// Public customer profiles (Phase 29). "public" here means whatever RLS
+// currently allows a SELECT to return — the profiles policy already
+// restricts rows to (owner OR is_public = true), so every function below
+// naturally returns nothing for someone else's private profile without
+// needing its own is_public check. The one exception is user search
+// (below), which adds an explicit is_public filter anyway — see its own
+// comment for why.
+// ---------------------------------------------------------------------------
+
+// user-avatars is a PRIVATE bucket (see 20260822070000_public_profiles.sql
+// and its Phase 29.1 amendment) — unlike company-logos, avatars must not
+// be fetchable by an arbitrary URL when the owning profile is private.
+// getPublicUrl() would defeat that entirely: Supabase serves a public-flag
+// bucket's objects via a route that bypasses Storage RLS altogether
+// (confirmed live against company-logos: a real object was fetched with
+// zero auth headers, HTTP 200). createSignedUrl() is the correct
+// alternative — it asks Storage to check the caller's own RLS permission
+// on that specific object (owner, or the owning profile is_public) and
+// only issues a URL if that passes; it returns no usable URL for someone
+// else's private avatar, denied or not, same "can't distinguish" shape as
+// profile privacy elsewhere in this feature.
+const AVATAR_SIGNED_URL_TTL_SECONDS = 3600
+
+async function getAvatarUrl(avatarPath: string | null): Promise<string | null> {
+  if (!avatarPath) return null
+  const { data, error } = await supabase.storage.from('user-avatars').createSignedUrl(avatarPath, AVATAR_SIGNED_URL_TTL_SECONDS)
+  if (error || !data) return null
+  return data.signedUrl
+}
+
+export interface PublicProfile {
+  id: string
+  username: string
+  displayName: string
+  bio: string | null
+  avatarUrl: string | null
+  avatarPath: string | null
+  isPublic: boolean
+  createdAt: string
+  reviewCount: number
+}
+
+async function toPublicProfile(row: ProfileRow, reviewCount: number): Promise<PublicProfile> {
+  return {
+    id: row.id,
+    username: row.username,
+    displayName: row.display_name,
+    bio: row.bio,
+    avatarUrl: await getAvatarUrl(row.avatar_path),
+    avatarPath: row.avatar_path,
+    isPublic: row.is_public,
+    createdAt: row.created_at,
+    reviewCount,
+  }
+}
+
+/**
+ * null covers two indistinguishable cases on purpose: no profile exists at
+ * this username, or one exists but is private and the caller isn't its
+ * owner — RLS filters both down to zero rows the same way. Outbid doesn't
+ * currently reveal which case it was; the profile page shows one neutral
+ * "not available" state for both, which is a deliberate, simpler choice,
+ * not an oversight (see the Phase 29 report).
+ */
+export async function getPublicProfileByUsername(username: string): Promise<PublicProfile | null> {
+  const { data, error } = await supabase.from('profiles').select('*').eq('username', username).maybeSingle()
+  if (error) throw error
+  if (!data) return null
+
+  const { count, error: countError } = await supabase
+    .from('reviews')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', data.id)
+  if (countError) throw countError
+
+  return await toPublicProfile(data, count ?? 0)
+}
+
+/** Category ids the user has marked as interests. Same RLS-does-the-filtering reasoning as getPublicProfileByUsername. */
+export async function getUserInterestCategoryIds(userId: string): Promise<string[]> {
+  const { data, error } = await supabase.from('user_interests').select('category_id').eq('user_id', userId)
+  if (error) throw error
+  return data.map((row) => row.category_id)
+}
+
+/**
+ * Batch-signs a set of avatar paths in one Storage call (createSignedUrls,
+ * the plural/batch form) rather than one request per path — shared by
+ * every place that resolves several users' avatars at once (review author
+ * lists, search results), so nothing ends up doing a per-row round trip.
+ * A path that fails to sign (denied by Storage RLS, or already deleted)
+ * is simply absent from the returned map.
+ */
+async function getSignedAvatarUrls(paths: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>()
+  const uniquePaths = [...new Set(paths)]
+  if (uniquePaths.length === 0) return map
+  const { data, error } = await supabase.storage.from('user-avatars').createSignedUrls(uniquePaths, AVATAR_SIGNED_URL_TTL_SECONDS)
+  if (error || !data) return map
+  for (const item of data) {
+    if (item.path && item.signedUrl && !item.error) map.set(item.path, item.signedUrl)
+  }
+  return map
+}
+
+export interface ReviewAuthorInfo {
+  username: string
+  avatarUrl: string | null
+}
+
+/**
+ * Batched user id -> {username, avatarUrl} lookup, for making review
+ * authors clickable (and showing their real avatar) without snapshotting
+ * either onto every review row the way author_display_name is. One query
+ * for the profile rows, one batched signed-URL call for whichever of them
+ * have an avatar — never a per-review lookup. RLS naturally omits any id
+ * whose profile is private and isn't the caller's own — those simply
+ * don't appear in the returned map, which callers treat as "don't link
+ * this author, show the deterministic default avatar instead."
+ */
+export async function getReviewAuthorInfoByIds(userIds: string[]): Promise<Map<string, ReviewAuthorInfo>> {
+  const map = new Map<string, ReviewAuthorInfo>()
+  if (userIds.length === 0) return map
+
+  const { data, error } = await supabase.from('profiles').select('id, username, avatar_path').in('id', userIds)
+  if (error) throw error
+
+  const avatarPaths = data.map((row) => row.avatar_path).filter((path): path is string => Boolean(path))
+  const signedByPath = await getSignedAvatarUrls(avatarPaths)
+
+  for (const row of data) {
+    map.set(row.id, {
+      username: row.username,
+      avatarUrl: row.avatar_path ? (signedByPath.get(row.avatar_path) ?? null) : null,
+    })
+  }
+  return map
+}
+
+export interface ReviewPage {
+  reviews: Review[]
+  hasMore: boolean
+}
+
+/**
+ * Paginated, newest-first — backs the public profile's review list, which
+ * must not load a user's entire review history at once (see
+ * reviews_user_idx in 20260822070000_public_profiles.sql, the index this
+ * relies on). Fetches one extra row to determine hasMore without a
+ * separate count query.
+ */
+export async function getReviewsByUserPaginated(userId: string, limit: number, offset: number): Promise<ReviewPage> {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit) // one extra row
+  if (error) throw error
+  const hasMore = data.length > limit
+  return { reviews: data.slice(0, limit).map(toReview), hasMore }
+}
+
+export interface UserSearchResult {
+  id: string
+  username: string
+  displayName: string
+  avatarUrl: string | null
+  reviewCount: number
+}
+
+/**
+ * Explicit is_public filter here even though RLS already enforces it —
+ * search should never depend solely on RLS to decide what's discoverable,
+ * and this keeps the query's intent readable on its own. Matches only
+ * display_name/username; bio is deliberately excluded (not a genuinely
+ * useful match surface, and would make the query scan free-text on every
+ * row for little benefit). Email/auth metadata are never queried — they
+ * don't exist on this table at all.
+ */
+export async function searchProfiles(query: string, limit = 20): Promise<UserSearchResult[]> {
+  const needle = query.trim()
+  if (!needle) return []
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, username, display_name, avatar_path')
+    .eq('is_public', true)
+    .or(`display_name.ilike.%${needle}%,username.ilike.%${needle}%`)
+    .limit(limit)
+  if (error) throw error
+
+  const ids = data.map((row) => row.id)
+  const counts = await getReviewCountsByUserIds(ids)
+  const avatarPaths = data.map((row) => row.avatar_path).filter((path): path is string => Boolean(path))
+  const signedByPath = await getSignedAvatarUrls(avatarPaths)
+
+  return data.map((row) => ({
+    id: row.id,
+    username: row.username,
+    displayName: row.display_name,
+    avatarUrl: row.avatar_path ? (signedByPath.get(row.avatar_path) ?? null) : null,
+    reviewCount: counts.get(row.id) ?? 0,
+  }))
+}
+
+async function getReviewCountsByUserIds(userIds: string[]): Promise<Map<string, number>> {
+  const counts = new Map<string, number>()
+  if (userIds.length === 0) return counts
+  const { data, error } = await supabase.from('reviews').select('user_id').in('user_id', userIds)
+  if (error) throw error
+  for (const row of data) counts.set(row.user_id, (counts.get(row.user_id) ?? 0) + 1)
+  return counts
 }

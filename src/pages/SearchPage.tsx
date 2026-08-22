@@ -1,8 +1,16 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { Search as SearchIcon, Tag, Flame, X } from 'lucide-react'
-import { useAllCompanies, useCategories, useDeals, useTrends, useAllCompanyRatingSummaries } from '@/lib/supabase/hooks'
+import {
+  useAllCompanies,
+  useCategories,
+  useDeals,
+  useTrends,
+  useAllCompanyRatingSummaries,
+  useSearchProfiles,
+} from '@/lib/supabase/hooks'
 import { CompanyAvatar } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/shared/UserAvatar'
 import { CompanyRatingInline } from '@/features/reviews/CompanyRatingInline'
 import { SaveButton } from '@/components/shared/SaveButton'
 import { Input } from '@/components/ui/input'
@@ -17,6 +25,11 @@ export function SearchPage() {
   const dealsQuery = useDeals()
   const trendsQuery = useTrends()
   const ratingSummariesQuery = useAllCompanyRatingSummaries()
+  // Server-filtered (unlike companies/categories/deals/trends above, which
+  // fetch everything and filter client-side) — profiles search never sends
+  // the whole user base to the browser, and its own loading/error state is
+  // handled locally in its result section rather than gating the page.
+  const usersQuery = useSearchProfiles(value)
 
   // Keep the URL in sync (shareable/refreshable) without gating results on submit.
   useEffect(() => {
@@ -71,7 +84,10 @@ export function SearchPage() {
     ? trends.filter((t) => t.title.toLowerCase().includes(needle) || t.summary.toLowerCase().includes(needle))
     : []
 
-  const totalResults = matchedCompanies.length + matchedCategories.length + matchedDeals.length + matchedTrends.length
+  const matchedUsers = isSearching ? usersQuery.data ?? [] : []
+
+  const totalResults =
+    matchedCompanies.length + matchedCategories.length + matchedDeals.length + matchedTrends.length + matchedUsers.length
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
@@ -82,7 +98,7 @@ export function SearchPage() {
           autoFocus
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder="Search companies, categories, deals, trends…"
+          placeholder="Search companies, categories, deals, trends, people…"
           className="pl-9 pr-9"
         />
         {value && (
@@ -114,11 +130,31 @@ export function SearchPage() {
         </div>
       )}
 
-      {isSearching && totalResults === 0 && (
+      {isSearching && totalResults === 0 && !usersQuery.isLoading && (
         <div className="mt-10 rounded-xl border border-border bg-surface p-6 text-center">
           <p className="text-fg">No results for &ldquo;{value}&rdquo;.</p>
-          <p className="mt-1 text-sm text-fg-muted">Try a company name, category, or a word from a deal or trend.</p>
+          <p className="mt-1 text-sm text-fg-muted">Try a company name, category, a person, or a word from a deal or trend.</p>
         </div>
+      )}
+
+      {matchedUsers.length > 0 && (
+        <ResultSection title="Users">
+          {matchedUsers.map((u) => (
+            <Link
+              key={u.id}
+              to={`/users/${u.username}`}
+              className="flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 transition-colors hover:border-brand/30"
+            >
+              <UserAvatar userId={u.id} displayName={u.displayName} avatarUrl={u.avatarUrl} size="sm" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-fg">{u.displayName}</p>
+                <p className="truncate text-xs text-fg-muted">
+                  {u.reviewCount} review{u.reviewCount === 1 ? '' : 's'}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </ResultSection>
       )}
 
       {matchedCategories.length > 0 && (

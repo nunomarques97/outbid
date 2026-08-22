@@ -354,3 +354,77 @@ export async function updateDisplayName(userId: string, displayName: string): Pr
   const { error } = await supabase.from('profiles').update({ display_name: displayName }).eq('id', userId)
   if (error) throw error
 }
+
+// ---------------------------------------------------------------------------
+// Public customer profiles (Phase 29). username is deliberately never
+// written here — it's auto-generated server-side (generate_unique_username,
+// 20260822070000_public_profiles.sql) and not an editable field this phase.
+// ---------------------------------------------------------------------------
+
+export async function updateProfile(
+  userId: string,
+  input: Partial<{ displayName: string; bio: string | null; isPublic: boolean }>,
+): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      ...(input.displayName !== undefined ? { display_name: input.displayName } : {}),
+      ...(input.bio !== undefined ? { bio: input.bio } : {}),
+      ...(input.isPublic !== undefined ? { is_public: input.isPublic } : {}),
+    })
+    .eq('id', userId)
+  if (error) throw error
+}
+
+export const AVATAR_MAX_BYTES = 2 * 1024 * 1024 // 2MB
+export const AVATAR_ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const
+
+/**
+ * Same shape as uploadCompanyLogo (fresh random path every time, update
+ * the row, best-effort delete the old object) — deliberately a separate
+ * function against a separate bucket, not shared code, so avatars and
+ * company logos never accidentally cross-reference each other's storage.
+ */
+export async function uploadAvatar(userId: string, file: File, previousPath?: string | null): Promise<string> {
+  if (!AVATAR_ALLOWED_TYPES.includes(file.type as (typeof AVATAR_ALLOWED_TYPES)[number])) {
+    throw new Error('Avatar must be a PNG, JPEG, or WebP image.')
+  }
+  if (file.size > AVATAR_MAX_BYTES) {
+    throw new Error('Avatar must be smaller than 2MB.')
+  }
+
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'png'
+  const path = `${userId}/${crypto.randomUUID()}.${ext}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('user-avatars')
+    .upload(path, file, { contentType: file.type })
+  if (uploadError) throw uploadError
+
+  const { error: updateError } = await supabase.from('profiles').update({ avatar_path: path }).eq('id', userId)
+  if (updateError) {
+    await supabase.storage.from('user-avatars').remove([path]).catch(() => {})
+    throw updateError
+  }
+
+  if (previousPath) {
+    await supabase.storage.from('user-avatars').remove([previousPath]).catch(() => {})
+  }
+
+  return path
+}
+
+/**
+ * Replaces the full interest set (delete-then-insert), same reasoning as
+ * setCompanyCategory: simpler than diffing, and the whole set is always
+ * small (bounded by the number of categories that exist at all).
+ */
+export async function setUserInterests(userId: string, categoryIds: string[]): Promise<void> {
+  const { error: deleteError } = await supabase.from('user_interests').delete().eq('user_id', userId)
+  if (deleteError) throw deleteError
+  if (categoryIds.length === 0) return
+  const { error: insertError } = await supabase
+    .from('user_interests')
+    .insert(categoryIds.map((categoryId) => ({ user_id: userId, category_id: categoryId })))
+  if (insertError) throw insertError
+}

@@ -56,6 +56,8 @@ function useInvalidateReviewQueries() {
     // new review shouldn't require a hard refresh to show up there too.
     queryClient.invalidateQueries({ queryKey: ['ratingSummaries'] })
     queryClient.invalidateQueries({ queryKey: ['myReviews', user?.id] })
+    // The public profile's paginated review list (Phase 29) — same reviews, different surface/query shape.
+    queryClient.invalidateQueries({ queryKey: ['userReviews', user?.id] })
   }
 }
 

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useAuth } from '@/features/auth/useAuth'
-import { useMyCompanies } from '@/lib/supabase/hooks'
+import { useMyCompanies, useReviewAuthors } from '@/lib/supabase/hooks'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 import { Button } from '@/components/ui/button'
 import { RatingSummary } from './RatingSummary'
@@ -31,6 +31,11 @@ export function CompanyReviewsSection({ companyId, companyName }: CompanyReviews
   const myReviewQuery = useMyReview(companyId)
   const deleteMutation = useDeleteReview()
   const [mode, setMode] = useState<Mode>('idle')
+  // Called unconditionally (before any early return) per rules of hooks —
+  // empty until reviewsQuery resolves, which useReviewAuthors already
+  // handles (enabled: userIds.length > 0). Includes the signed-in user's
+  // own id too, so "your review" also links to their own profile.
+  const authorsQuery = useReviewAuthors((reviewsQuery.data ?? []).map((r) => r.userId))
 
   if (reviewsQuery.isPending || ratingSummaryQuery.isPending) {
     return (
@@ -95,6 +100,8 @@ export function CompanyReviewsSection({ companyId, companyName }: CompanyReviews
         <ReviewCard
           review={myReview}
           isOwn
+          authorUsername={authorsQuery.data?.get(myReview.userId)?.username}
+          authorAvatarUrl={authorsQuery.data?.get(myReview.userId)?.avatarUrl}
           onEdit={() => setMode('editing')}
           onDelete={handleDelete}
           deleting={deleteMutation.isPending}
@@ -108,7 +115,12 @@ export function CompanyReviewsSection({ companyId, companyName }: CompanyReviews
       {otherReviews.length > 0 && (
         <div className="flex flex-col gap-3">
           {otherReviews.map((review) => (
-            <ReviewCard key={review.id} review={review} />
+            <ReviewCard
+              key={review.id}
+              review={review}
+              authorUsername={authorsQuery.data?.get(review.userId)?.username}
+              authorAvatarUrl={authorsQuery.data?.get(review.userId)?.avatarUrl}
+            />
           ))}
         </div>
       )}

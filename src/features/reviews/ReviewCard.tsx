@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Pencil, Trash2 } from 'lucide-react'
 import type { Review } from '@/lib/supabase/queries'
 import { StarRating } from '@/components/shared/StarRating'
+import { UserAvatar } from '@/components/shared/UserAvatar'
 import { formatRelativeTime, cn } from '@/lib/utils'
 
 interface ReviewCardProps {
@@ -10,6 +12,20 @@ interface ReviewCardProps {
   onEdit?: () => void
   onDelete?: () => void
   deleting?: boolean
+  /**
+   * The author's username, when known — makes the author avatar/name a
+   * link to their public profile. Omit (or pass undefined) when it isn't
+   * known yet or the author's profile isn't public; the name still
+   * renders, just as plain text, never a broken/guessed link.
+   */
+  authorUsername?: string
+  /**
+   * A real, already-resolved (signed) avatar URL, when the author has one
+   * and it's visible to the current viewer. Omit/null to fall back to the
+   * deterministic default — never fetched here per-card; callers resolve
+   * this in a batch (see useReviewAuthors) alongside authorUsername.
+   */
+  authorAvatarUrl?: string | null
 }
 
 /**
@@ -26,8 +42,21 @@ function wasEdited(review: Review): boolean {
  * creation (see reviews_set_author_name) — never review.userId. No raw
  * account identifiers ever reach this component's output.
  */
-export function ReviewCard({ review, isOwn, onEdit, onDelete, deleting }: ReviewCardProps) {
+export function ReviewCard({ review, isOwn, onEdit, onDelete, deleting, authorUsername, authorAvatarUrl }: ReviewCardProps) {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  const authorLabel = (
+    <span className="inline-flex items-center gap-1.5">
+      <UserAvatar
+        userId={review.userId}
+        displayName={review.authorDisplayName}
+        avatarUrl={authorAvatarUrl}
+        size="sm"
+        className="h-4 w-4 text-[9px]"
+      />
+      {review.authorDisplayName}
+    </span>
+  )
 
   return (
     <div className={cn('rounded-xl border p-4', isOwn ? 'border-organic/30 bg-organic/5' : 'border-border bg-surface')}>
@@ -43,9 +72,18 @@ export function ReviewCard({ review, isOwn, onEdit, onDelete, deleting }: Review
       <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-fg-muted">{review.body}</p>
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-fg-subtle">
-          {review.authorDisplayName} · {formatRelativeTime(review.createdAt)}
-          {wasEdited(review) && ' · edited'}
+        <p className="flex items-center gap-1 text-xs text-fg-subtle">
+          {authorUsername ? (
+            <Link to={`/users/${authorUsername}`} className="hover:text-fg hover:underline">
+              {authorLabel}
+            </Link>
+          ) : (
+            authorLabel
+          )}
+          <span>
+            · {formatRelativeTime(review.createdAt)}
+            {wasEdited(review) && ' · edited'}
+          </span>
         </p>
 
         {isOwn && (onEdit || onDelete) && (

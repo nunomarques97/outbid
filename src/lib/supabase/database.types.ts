@@ -33,18 +33,32 @@ export interface Database {
         Row: {
           id: string
           display_name: string
+          // Auto-generated, not user-editable this phase — see
+          // generate_unique_username() in 20260822070000_public_profiles.sql.
+          username: string
+          bio: string | null
+          avatar_path: string | null
+          is_public: boolean
           created_at: string
           updated_at: string
         }
         Insert: {
           id: string
           display_name: string
+          username: string
+          bio?: string | null
+          avatar_path?: string | null
+          is_public?: boolean
           created_at?: string
           updated_at?: string
         }
         Update: Partial<{
           id: string
           display_name: string
+          username: string
+          bio: string | null
+          avatar_path: string | null
+          is_public: boolean
           created_at: string
           updated_at: string
         }>
@@ -425,6 +439,12 @@ export interface Database {
           updated_at?: string
         }
         Update: Partial<Database['public']['Tables']['bid_payments']['Insert']>
+        Relationships: []
+      }
+      user_interests: {
+        Row: { user_id: string; category_id: string; created_at: string }
+        Insert: { user_id: string; category_id: string; created_at?: string }
+        Update: Partial<{ user_id: string; category_id: string; created_at: string }>
         Relationships: []
       }
     }
