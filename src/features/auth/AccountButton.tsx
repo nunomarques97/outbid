@@ -1,14 +1,16 @@
 import { useState } from 'react'
-import { LogIn, LogOut, User as UserIcon } from 'lucide-react'
+import { LogIn, LogOut, User as UserIcon, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { useAuth } from './useAuth'
 import { AuthDialog } from './AuthDialog'
+import { EditDisplayNameDialog } from './EditDisplayNameDialog'
 
 export function AccountButton() {
   const { user, signOut } = useAuth()
   const [authOpen, setAuthOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [editNameOpen, setEditNameOpen] = useState(false)
 
   if (!user) {
     return (
@@ -37,6 +39,17 @@ export function AccountButton() {
           <p className="truncate px-2 py-1.5 text-xs text-fg-subtle">{user.email}</p>
           <button
             type="button"
+            onClick={() => {
+              setEditNameOpen(true)
+              setMenuOpen(false)
+            }}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-fg hover:bg-surface-raised"
+          >
+            <Pencil className="h-3.5 w-3.5" /> Display name
+          </button>
+          <div className="my-1 border-t border-border" />
+          <button
+            type="button"
             onClick={async () => {
               await signOut()
               setMenuOpen(false)
@@ -48,6 +61,7 @@ export function AccountButton() {
           </button>
         </div>
       )}
+      <EditDisplayNameDialog open={editNameOpen} onOpenChange={setEditNameOpen} />
     </div>
   )
 }

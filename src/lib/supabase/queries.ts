@@ -653,3 +653,19 @@ export async function getAllCompanyRatingSummaries(): Promise<Map<string, Compan
   for (const row of data) map.set(row.company_id, toRatingSummary(row))
   return map
 }
+
+// ---------------------------------------------------------------------------
+// Profile — currently just the public display name. profiles already has
+// "self-readable"/"self-updatable" RLS (core_schema.sql), so this needed no
+// migration; it was purely a missing frontend surface. Changing this value
+// only affects reviews written after the change — reviews.author_display_name
+// is snapshotted at creation time (reviews_set_author_name trigger), not a
+// live join, so past reviews intentionally keep whatever name was current
+// when they were written.
+// ---------------------------------------------------------------------------
+
+export async function getMyDisplayName(userId: string): Promise<string> {
+  const { data, error } = await supabase.from('profiles').select('display_name').eq('id', userId).single()
+  if (error) throw error
+  return data.display_name
+}

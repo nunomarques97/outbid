@@ -254,3 +254,14 @@ export async function claimDeal(userId: string, dealId: string): Promise<void> {
   const { error } = await supabase.from('deal_claims').insert({ user_id: userId, deal_id: dealId })
   if (error && error.code !== '23505') throw error
 }
+
+/**
+ * Only ever updates the caller's own row in practice — enforced by the
+ * profiles "self-updatable" RLS policy (id = auth.uid()), not by this
+ * .eq() filter, same division of responsibility as every other mutation
+ * here.
+ */
+export async function updateDisplayName(userId: string, displayName: string): Promise<void> {
+  const { error } = await supabase.from('profiles').update({ display_name: displayName }).eq('id', userId)
+  if (error) throw error
+}
