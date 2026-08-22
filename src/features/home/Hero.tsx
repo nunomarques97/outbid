@@ -4,6 +4,7 @@ import { ArrowRight, TrendingUp } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { useAllCompanies, useCategories } from '@/lib/supabase/hooks'
 import { formatCurrency } from '@/lib/utils'
 
 const previewRows = [
@@ -13,6 +14,13 @@ const previewRows = [
 ]
 
 export function Hero() {
+  // Shares the exact ['companies']/['categories'] query keys every other
+  // homepage section already warms — this never adds a second request, it
+  // just reads the same cache once it resolves. Undefined (still loading)
+  // simply hides that stat rather than flashing a false "0".
+  const companyCount = useAllCompanies().data?.length
+  const categoryCount = useCategories().data?.length
+
   return (
     <section className="relative overflow-hidden border-b border-border">
       <div className="pointer-events-none absolute -top-32 left-1/2 h-96 w-[42rem] -translate-x-1/2 rounded-full bg-brand/20 blur-3xl" />
@@ -37,8 +45,12 @@ export function Hero() {
             </Link>
           </div>
           <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-3 text-sm text-fg-muted">
-            <span><strong className="font-numeral text-fg">19</strong> companies ranked</span>
-            <span><strong className="font-numeral text-fg">4</strong> categories</span>
+            {companyCount !== undefined && (
+              <span><strong className="font-numeral text-fg">{companyCount}</strong> companies ranked</span>
+            )}
+            {categoryCount !== undefined && (
+              <span><strong className="font-numeral text-fg">{categoryCount}</strong> categories</span>
+            )}
             <span><strong className="font-numeral text-fg">100%</strong> transparent bids</span>
           </div>
         </div>

@@ -5,6 +5,8 @@ import { buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AccountButton } from '@/features/auth/AccountButton'
 import { NotificationBell } from '@/features/notifications/NotificationBell'
+import { SavedLink } from '@/features/saved/SavedLink'
+import { useAuth } from '@/features/auth/useAuth'
 import { cn } from '@/lib/utils'
 
 const navLinks = [
@@ -16,6 +18,7 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [query, setQuery] = useState('')
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   function handleSearch(e: FormEvent) {
     e.preventDefault()
@@ -64,6 +67,7 @@ export function Header() {
             <Briefcase className="h-4 w-4" />
             For Businesses
           </Link>
+          <SavedLink />
           <NotificationBell />
           <AccountButton />
           <button
@@ -97,6 +101,15 @@ export function Header() {
               {link.label}
             </Link>
           ))}
+          {user && (
+            <Link
+              to="/saved"
+              onClick={() => setMobileOpen(false)}
+              className="rounded-md px-3 py-2 text-sm font-medium text-fg-muted hover:bg-surface-raised hover:text-fg"
+            >
+              Saved companies
+            </Link>
+          )}
           <Link
             to="/dashboard"
             onClick={() => setMobileOpen(false)}

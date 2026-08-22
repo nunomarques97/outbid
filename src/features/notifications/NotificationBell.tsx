@@ -3,16 +3,25 @@ import { Link } from 'react-router-dom'
 import { Bell, CheckCheck, AlertTriangle } from 'lucide-react'
 import type { Company } from '@/mocks/types'
 import { useAuth } from '@/features/auth/useAuth'
-import { usePlacements, useCategories, useAllCompanies } from '@/lib/supabase/hooks'
+import { usePlacements, useCategories, useAllCompanies, useMyCompanies } from '@/lib/supabase/hooks'
 import { getPlacementDisplayName, type Notification } from '@/lib/supabase/queries'
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from './useNotifications'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { formatCurrency, formatRelativeTime, cn } from '@/lib/utils'
 
-/** Only ever rendered for a signed-in user — nothing to show otherwise, so this stays out of the header entirely when signed out. */
+/**
+ * Notifications are advertiser-only content (outbid alerts on a company's
+ * bids) — a signed-in customer who doesn't manage any company would only
+ * ever see an empty "You're all caught up" bell, which is advertiser
+ * furniture with no purpose for them. Gated on actually managing at least
+ * one company, not just being signed in, so it stays out of pure-customer
+ * navigation entirely.
+ */
 export function NotificationBell() {
   const { user } = useAuth()
+  const myCompaniesQuery = useMyCompanies()
   if (!user) return null
+  if (myCompaniesQuery.isPending || (myCompaniesQuery.data?.length ?? 0) === 0) return null
   return <NotificationBellContent />
 }
 

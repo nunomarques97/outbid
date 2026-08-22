@@ -10,6 +10,7 @@ import {
   useDeals,
   useAllCompanies,
   useCompaniesByCategory,
+  useAllCompanyRatingSummaries,
 } from '@/lib/supabase/hooks'
 import { getSponsoredSlice, getOrganicRanking } from '@/lib/ranking'
 import { CompanyAvatar } from '@/components/ui/avatar'
@@ -17,6 +18,7 @@ import { VoteButton } from '@/components/shared/VoteButton'
 import { SaveButton } from '@/components/shared/SaveButton'
 import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
 import { DealCard } from '@/components/shared/DealCard'
+import { OrganicEntryCard } from '@/components/leaderboard/OrganicEntryCard'
 import { CompanyRatingBadge } from '@/features/reviews/CompanyRatingBadge'
 import { CompanyReviewsSection } from '@/features/reviews/CompanyReviewsSection'
 import { buttonVariants } from '@/components/ui/button'
@@ -43,6 +45,9 @@ function CompanyProfileContent({ company }: { company: Company }) {
   const allCompaniesQuery = useAllCompanies()
   const primaryCategoryId = company.categoryIds[0]
   const primaryCategoryCompaniesQuery = useCompaniesByCategory(primaryCategoryId)
+  // Supplementary, same as every other discovery surface — not part of the
+  // loading/error gate below.
+  const ratingSummariesQuery = useAllCompanyRatingSummaries()
 
   const loading =
     categoriesQuery.isLoading ||
@@ -81,6 +86,10 @@ function CompanyProfileContent({ company }: { company: Company }) {
     (b) => b.companyAId === company.id || b.companyBId === company.id,
   )
   const relatedDeals = (dealsQuery.data ?? []).filter((d) => d.companyId === company.id)
+  const primaryCategory = (categoriesQuery.data ?? []).find((c) => c.id === primaryCategoryId)
+  const relatedCompanies = (primaryCategoryCompaniesQuery.data ?? [])
+    .filter((c) => c.id !== company.id)
+    .slice(0, 3)
 
   const organicRank = (() => {
     if (!primaryCategoryId) return null
@@ -231,6 +240,19 @@ function CompanyProfileContent({ company }: { company: Company }) {
                 </Link>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {primaryCategory && relatedCompanies.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-widest text-fg-muted">
+            More in {primaryCategory.name}
+          </h2>
+          <div className="flex flex-col gap-3">
+            {relatedCompanies.map((c) => (
+              <OrganicEntryCard key={c.id} company={c} ratingSummary={ratingSummariesQuery.data?.get(c.id)} />
+            ))}
           </div>
         </div>
       )}

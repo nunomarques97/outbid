@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom'
 import * as Icons from 'lucide-react'
-import { useCategories, useAllCompanies, usePlacements, useActiveBids } from '@/lib/supabase/hooks'
+import { useCategories, useAllCompanies, usePlacements, useActiveBids, useAllCompanyRatingSummaries } from '@/lib/supabase/hooks'
 import { getPlacementForCategory } from '@/lib/supabase/queries'
 import { getSponsoredSlice, getOrganicRanking } from '@/lib/ranking'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
+import { CompanyRatingInline } from '@/features/reviews/CompanyRatingInline'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 
 export function RankingsPreview() {
@@ -12,6 +13,9 @@ export function RankingsPreview() {
   const companiesQuery = useAllCompanies()
   const placementsQuery = usePlacements()
   const bidsQuery = useActiveBids()
+  // Supplementary, same as every other discovery surface — not part of the
+  // loading/error gate below.
+  const ratingSummariesQuery = useAllCompanyRatingSummaries()
 
   if (categoriesQuery.isLoading || companiesQuery.isLoading || placementsQuery.isLoading || bidsQuery.isLoading) {
     return <LoadingState label="Loading rankings…" />
@@ -58,6 +62,7 @@ export function RankingsPreview() {
                   <div className="flex items-center gap-2.5 rounded-lg border border-sponsored/25 bg-surface-raised px-3 py-2 shadow-glow-gold">
                     <CompanyAvatar initials={topSponsoredCompany.initials} color={topSponsoredCompany.logoColor} logoUrl={topSponsoredCompany.logoUrl} size="sm" />
                     <span className="flex-1 truncate text-sm text-fg">{topSponsoredCompany.name}</span>
+                    <CompanyRatingInline summary={ratingSummariesQuery.data?.get(topSponsoredCompany.id)} className="shrink-0" />
                     <SponsoredBadge size="sm" />
                   </div>
                 )}
@@ -66,6 +71,7 @@ export function RankingsPreview() {
                     <span className="font-numeral w-3 text-center text-xs text-organic">{i + 1}</span>
                     <CompanyAvatar initials={company.initials} color={company.logoColor} logoUrl={company.logoUrl} size="sm" />
                     <span className="flex-1 truncate text-sm text-fg-muted">{company.name}</span>
+                    <CompanyRatingInline summary={ratingSummariesQuery.data?.get(company.id)} className="shrink-0" />
                   </div>
                 ))}
                 {!topSponsoredCompany && topOrganic.length === 0 && (
