@@ -243,16 +243,74 @@ export async function unsaveCompany(userId: string, companyId: string): Promise<
 }
 
 /**
- * A claim is a permanent record, not a toggle — there is no unclaimDeal().
- * 23505 is swallowed for the same reason as saveCompany: a stale cache
- * race sending a duplicate claim isn't a real error, the end state the
- * caller wanted (this deal is claimed) is already true. Whether the deal is
- * still open and whether the caller manages the company are both enforced
- * by the deal_claims RLS insert policy, not re-checked here.
+ * Watching a deal (still backed by the deal_claims table — see
+ * *_deal_claims.sql / *_deal_management_and_unwatch.sql) is a toggle, like
+ * a save, not a permanent record. 23505 is swallowed for the same reason as
+ * saveCompany: a stale cache race sending a duplicate watch isn't a real
+ * error, the end state the caller wanted (this deal is watched) is already
+ * true. Whether the deal is still open and whether the caller manages the
+ * company are both enforced by the deal_claims RLS insert policy, not
+ * re-checked here.
  */
-export async function claimDeal(userId: string, dealId: string): Promise<void> {
+export async function watchDeal(userId: string, dealId: string): Promise<void> {
   const { error } = await supabase.from('deal_claims').insert({ user_id: userId, deal_id: dealId })
   if (error && error.code !== '23505') throw error
+}
+
+export async function unwatchDeal(userId: string, dealId: string): Promise<void> {
+  const { error } = await supabase.from('deal_claims').delete().eq('user_id', userId).eq('deal_id', dealId)
+  if (error) throw error
+}
+
+// ---------------------------------------------------------------------------
+// Advertiser deal management. Authorization is enforced entirely by the
+// deals INSERT/UPDATE/DELETE RLS policies (is_company_member(company_id)),
+// not re-checked here — same division of responsibility as every other
+// company-owned mutation (bids, logos, etc.). There is no "disable" flag:
+// setting expires_at to a past date is how an advertiser takes a deal down
+// without deleting it, reusing the exact expiry logic DealCard already
+// depends on everywhere else rather than adding a second, redundant
+// is_active concept.
+// ---------------------------------------------------------------------------
+
+interface DealInput {
+  title: string
+  discountLabel: string
+  description: string
+  expiresAt: string
+  /** Bare domain/path, no protocol — same convention as companies.website. Empty/omitted falls back to the company's own website. */
+  destinationUrl?: string | null
+}
+
+export async function createDeal(companyId: string, input: DealInput): Promise<void> {
+  const { error } = await supabase.from('deals').insert({
+    company_id: companyId,
+    title: input.title,
+    discount_label: input.discountLabel,
+    description: input.description,
+    expires_at: input.expiresAt,
+    destination_url: input.destinationUrl || null,
+  })
+  if (error) throw error
+}
+
+export async function updateDeal(dealId: string, input: DealInput): Promise<void> {
+  const { error } = await supabase
+    .from('deals')
+    .update({
+      title: input.title,
+      discount_label: input.discountLabel,
+      description: input.description,
+      expires_at: input.expiresAt,
+      destination_url: input.destinationUrl || null,
+    })
+    .eq('id', dealId)
+  if (error) throw error
+}
+
+export async function deleteDeal(dealId: string): Promise<void> {
+  const { error } = await supabase.from('deals').delete().eq('id', dealId)
+  if (error) throw error
 }
 
 /**

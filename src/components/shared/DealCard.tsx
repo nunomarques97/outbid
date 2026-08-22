@@ -4,7 +4,7 @@ import { Clock, Check } from 'lucide-react'
 import type { Deal, Company } from '@/mocks/types'
 import { useCategories, useMyCompanies } from '@/lib/supabase/hooks'
 import { useAuth } from '@/features/auth/useAuth'
-import { useMyClaimedDealIds, useClaimDeal } from '@/features/deals/useDealClaims'
+import { useMyWatchedDealIds, useWatchDeal, useUnwatchDeal } from '@/features/deals/useWatchedDeals'
 import { getDealCtaState } from '@/lib/dealState'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { CompanyWebsiteLink } from '@/components/shared/CompanyWebsiteLink'
@@ -25,30 +25,39 @@ export function DealCard({ deal, company }: { deal: Deal; company: Company }) {
   const signedIn = isConfigured && Boolean(user)
   const left = daysLeft(deal.expiresAt)
   const expired = isExpired(deal.expiresAt)
+  // A deal-specific landing page if the advertiser set one, otherwise the
+  // company's own site — Outbid never invents a destination.
+  const destinationWebsite = deal.destinationUrl || company.website
 
   const { data: categories = [] } = useCategories()
   const category = categories.find((c) => company.categoryIds.includes(c.id))
 
-  const claimedIdsQuery = useMyClaimedDealIds()
-  const claimMutation = useClaimDeal()
-  const claimed = claimedIdsQuery.data?.includes(deal.id) ?? false
+  const watchedIdsQuery = useMyWatchedDealIds()
+  const watchMutation = useWatchDeal()
+  const unwatchMutation = useUnwatchDeal()
+  const watching = watchedIdsQuery.data?.includes(deal.id) ?? false
 
   // Mirrors CompanyReviewsSection's self-review guard: proactively hides
-  // the claim action for a company's own members rather than letting them
+  // the watch action for a company's own members rather than letting them
   // hit the RLS rejection this would otherwise produce — deal_claims'
   // insert policy blocks this at the database level regardless.
   const myCompaniesQuery = useMyCompanies()
   const managesThisCompany = Boolean(myCompaniesQuery.data?.some((c) => c.id === company.id))
 
-  const ctaState = getDealCtaState({ expired, signedIn, managesCompany: managesThisCompany, claimed })
+  const ctaState = getDealCtaState({ expired, signedIn, managesCompany: managesThisCompany, watching })
+  const watchPending = watchMutation.isPending || unwatchMutation.isPending
 
-  function handleClaim() {
+  function handleToggleWatch() {
     if (!signedIn) {
-      toast.error('Sign in to claim this deal', { description: 'Sign in from the header, then come back to claim it.' })
+      toast.error('Sign in to watch this deal', { description: 'Sign in from the header, then come back to watch it.' })
       return
     }
-    claimMutation.mutate(deal.id, {
-      onSuccess: () => toast.success(`Deal claimed at ${company.name}`, { description: deal.title }),
+    if (watching) {
+      unwatchMutation.mutate(deal.id, { onSuccess: () => toast.success('Removed from watched deals.') })
+      return
+    }
+    watchMutation.mutate(deal.id, {
+      onSuccess: () => toast.success(`Watching ${deal.title}`, { description: `at ${company.name}` }),
     })
   }
 
@@ -56,7 +65,7 @@ export function DealCard({ deal, company }: { deal: Deal; company: Company }) {
     <div
       className={cn(
         'flex flex-col rounded-xl border bg-surface p-4 transition-colors hover:border-organic/30',
-        ctaState === 'claimed' ? 'border-organic/30' : 'border-border',
+        ctaState === 'watching' ? 'border-organic/30' : 'border-border',
       )}
     >
       <div className="mb-3 flex items-center gap-3">
@@ -65,7 +74,7 @@ export function DealCard({ deal, company }: { deal: Deal; company: Company }) {
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-fg hover:underline">{company.name}</p>
             <p className="truncate text-xs text-fg-subtle">
-              {category?.name} · {formatCompactNumber(deal.claimCount)} claimed
+              {category?.name} · {formatCompactNumber(deal.claimCount)} watching
             </p>
           </div>
         </Link>
@@ -82,13 +91,12 @@ export function DealCard({ deal, company }: { deal: Deal; company: Company }) {
         </span>
 
         <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-          {/* The destination is just the company's public website — the
-              same information CompanyProfilePage already links out to —
-              so it's available regardless of claim/auth state, not gated
-              behind claiming. Claiming is a separate "I'm interested"
-              signal, not an unlock. */}
-          <CompanyWebsiteLink website={company.website} size="sm">
-            Website
+          {/* Outbid shows the offer and sends the customer to it — it never
+              redeems or validates anything itself. This link is available
+              regardless of watch/auth state, since it's public information,
+              not something watching unlocks. */}
+          <CompanyWebsiteLink website={destinationWebsite} size="sm">
+            Visit deal
           </CompanyWebsiteLink>
 
           {ctaState === 'expired' && (
@@ -101,19 +109,19 @@ export function DealCard({ deal, company }: { deal: Deal; company: Company }) {
               Your deal
             </Button>
           )}
-          {ctaState === 'claimed' && (
-            <Button size="sm" variant="secondary" disabled className="text-organic">
-              <Check className="h-3.5 w-3.5" /> Claimed
+          {ctaState === 'watching' && (
+            <Button size="sm" variant="secondary" disabled={watchPending} onClick={handleToggleWatch} className="text-organic">
+              <Check className="h-3.5 w-3.5" /> {watchPending ? 'Removing…' : 'Watched'}
             </Button>
           )}
           {ctaState === 'signedOut' && (
-            <Button size="sm" variant="primary" onClick={handleClaim}>
-              Sign in to claim
+            <Button size="sm" variant="primary" onClick={handleToggleWatch}>
+              Sign in to watch
             </Button>
           )}
-          {ctaState === 'claimable' && (
-            <Button size="sm" variant="primary" disabled={claimMutation.isPending} onClick={handleClaim}>
-              {claimMutation.isPending ? 'Claiming…' : 'Claim deal'}
+          {ctaState === 'watchable' && (
+            <Button size="sm" variant="primary" disabled={watchPending} onClick={handleToggleWatch}>
+              {watchPending ? 'Watching…' : 'Watch deal'}
             </Button>
           )}
         </div>

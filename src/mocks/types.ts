@@ -75,7 +75,10 @@ export interface Deal {
   discountLabel: string
   expiresAt: string
   description: string
+  /** Total interest signal — baseline + real watches. Mock deals never set watchCount beyond their baseline. */
   claimCount: number
+  /** Bare domain/path, no protocol (same convention as Company.website's storage). Null/undefined means "use the company's own website" — mock deals never set this. */
+  destinationUrl?: string | null
 }
 
 export interface Trend {

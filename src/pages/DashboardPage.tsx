@@ -18,6 +18,7 @@ import { OutbidBanner } from '@/features/dashboard/OutbidBanner'
 import { CompetitorBidTable } from '@/features/dashboard/CompetitorBidTable'
 import { BidAdjustControl } from '@/features/dashboard/BidAdjustControl'
 import { StartBidCard } from '@/features/dashboard/StartBidCard'
+import { CompanyDealsTab } from '@/features/dashboard/CompanyDealsTab'
 import { SpendOverviewChart } from '@/features/dashboard/SpendOverviewChart'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 import { formatCurrency } from '@/lib/utils'
@@ -185,6 +186,7 @@ function DashboardContent({ company }: { company: Company }) {
             <span className="hidden sm:inline">My Bids &amp; Competitors</span>
             <span className="sm:hidden">Bids</span>
           </TabsTrigger>
+          <TabsTrigger value="deals">Deals</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
         </TabsList>
       </div>
@@ -291,6 +293,10 @@ function DashboardContent({ company }: { company: Company }) {
             </div>
           </div>
         )}
+      </TabsContent>
+
+      <TabsContent value="deals" className="mt-6">
+        <CompanyDealsTab companyId={company.id} />
       </TabsContent>
 
       <TabsContent value="billing" className="mt-6 flex flex-col gap-6">

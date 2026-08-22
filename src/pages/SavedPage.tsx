@@ -3,7 +3,7 @@ import { Bookmark, Compass, Tag } from 'lucide-react'
 import { useAuth } from '@/features/auth/useAuth'
 import { useAllCompanies, useCategories, useAllCompanyRatingSummaries, useDeals } from '@/lib/supabase/hooks'
 import { useSavedCompanyIds } from '@/features/saved/useSavedCompanies'
-import { useMyClaimedDealIds } from '@/features/deals/useDealClaims'
+import { useMyWatchedDealIds } from '@/features/deals/useWatchedDeals'
 import { useMyReviews } from '@/features/reviews/useReviews'
 import { MyReviewsSection } from '@/features/reviews/MyReviewsSection'
 import { OrganicEntryCard } from '@/components/leaderboard/OrganicEntryCard'
@@ -26,7 +26,7 @@ function SignedOutState() {
       <Bookmark className="mx-auto h-8 w-8 text-fg-subtle" />
       <h1 className="mt-4 text-2xl font-bold text-fg">Sign in to see what you've saved</h1>
       <p className="mt-2 text-fg-muted">
-        Sign in from the header, then come back here to see your saved companies and claimed deals.
+        Sign in from the header, then come back here to see your saved companies and watched deals.
       </p>
     </div>
   )
@@ -35,7 +35,7 @@ function SignedOutState() {
 function SavedContent() {
   const { user } = useAuth()
   const savedIdsQuery = useSavedCompanyIds()
-  const claimedDealIdsQuery = useMyClaimedDealIds()
+  const watchedDealIdsQuery = useMyWatchedDealIds()
   const myReviewsQuery = useMyReviews()
   const companiesQuery = useAllCompanies()
   const categoriesQuery = useCategories()
@@ -49,14 +49,14 @@ function SavedContent() {
   // render or two right as they flip enabled.
   const loading =
     savedIdsQuery.isPending ||
-    claimedDealIdsQuery.isPending ||
+    watchedDealIdsQuery.isPending ||
     myReviewsQuery.isPending ||
     companiesQuery.isLoading ||
     categoriesQuery.isLoading ||
     dealsQuery.isLoading
   const errored =
     savedIdsQuery.isError ||
-    claimedDealIdsQuery.isError ||
+    watchedDealIdsQuery.isError ||
     myReviewsQuery.isError ||
     companiesQuery.isError ||
     categoriesQuery.isError ||
@@ -71,17 +71,17 @@ function SavedContent() {
   const myReviews = myReviewsQuery.data ?? []
 
   // Preserves the "most recent first" order the underlying queries already
-  // return — neither company nor deal data needs to know about save/claim
+  // return — neither company nor deal data needs to know about save/watch
   // order itself.
   const savedCompanies = savedIdsQuery.data
     .map((id) => companies.find((c) => c.id === id))
     .filter((c): c is NonNullable<typeof c> => Boolean(c))
 
-  const claimedDeals = claimedDealIdsQuery.data
+  const watchedDeals = watchedDealIdsQuery.data
     .map((id) => deals.find((d) => d.id === id))
     .filter((d): d is NonNullable<typeof d> => Boolean(d))
 
-  if (savedCompanies.length === 0 && claimedDeals.length === 0 && myReviews.length === 0) {
+  if (savedCompanies.length === 0 && watchedDeals.length === 0 && myReviews.length === 0) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
         <h1 className="text-3xl font-bold tracking-tight text-fg sm:text-4xl">Saved</h1>
@@ -111,11 +111,11 @@ function SavedContent() {
         </div>
       )}
 
-      {claimedDeals.length > 0 && (
+      {watchedDeals.length > 0 && (
         <div className="mt-10">
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-widest text-fg-muted">Claimed deals</h2>
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-widest text-fg-muted">Watched deals</h2>
           <div className="grid gap-4 sm:grid-cols-2">
-            {claimedDeals.map((deal) => {
+            {watchedDeals.map((deal) => {
               const company = companies.find((c) => c.id === deal.companyId)
               if (!company) return null
               return <DealCard key={deal.id} deal={deal} company={company} />
@@ -140,7 +140,7 @@ function EmptyState() {
       <Bookmark className="h-8 w-8 text-fg-subtle" />
       <p className="mt-4 font-semibold text-fg">Nothing here yet</p>
       <p className="mt-1 max-w-sm text-sm text-fg-muted">
-        Save companies, claim deals, or write a review — tap the bookmark icon on any profile, "Claim deal" on any
+        Save companies, watch deals, or write a review — tap the bookmark icon on any profile, "Watch deal" on any
         offer, or leave a review from a company's page.
       </p>
       <div className="mt-6 flex flex-wrap justify-center gap-3">

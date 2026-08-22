@@ -194,7 +194,11 @@ export interface Database {
           expires_at: string
           claim_count_baseline: number
           is_seed: boolean
+          // Bare domain/path, no protocol — same convention as
+          // companies.website. Null means "use the company's own website."
+          destination_url: string | null
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
@@ -205,7 +209,9 @@ export interface Database {
           expires_at: string
           claim_count_baseline?: number
           is_seed?: boolean
+          destination_url?: string | null
           created_at?: string
+          updated_at?: string
         }
         Update: Partial<Database['public']['Tables']['deals']['Insert']>
         Relationships: []

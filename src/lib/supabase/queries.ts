@@ -90,7 +90,7 @@ function toBattle(row: BattleRow, votesA: number, votesB: number): Battle {
   }
 }
 
-/** claimCount = the seed baseline + real claims — same "baseline + count(real rows)" shape as toCompany's organicVotes. */
+/** claimCount = the seed baseline + real watches — same "baseline + count(real rows)" shape as toCompany's organicVotes. */
 function toDeal(row: DealRow, realClaimCount: number): Deal {
   return {
     id: row.id,
@@ -100,6 +100,7 @@ function toDeal(row: DealRow, realClaimCount: number): Deal {
     discountLabel: row.discount_label,
     expiresAt: row.expires_at,
     description: row.description,
+    destinationUrl: row.destination_url,
     claimCount: row.claim_count_baseline + realClaimCount,
   }
 }
@@ -502,13 +503,15 @@ export async function getSavedCompanyIds(userId: string): Promise<string[]> {
 }
 
 // ---------------------------------------------------------------------------
-// Deal claims — IDs only, same reasoning as getSavedCompanyIds: the caller
+// Watched deals — IDs only, same reasoning as getSavedCompanyIds: the caller
 // combines these with the already-cached useDeals() list rather than a
-// second per-deal fetch.
+// second per-deal fetch. Still backed by the deal_claims table underneath
+// (see *_deal_claims.sql / *_deal_management_and_unwatch.sql) — only the
+// customer-facing concept is now "watch," not the database.
 // ---------------------------------------------------------------------------
 
-/** Most-recently-claimed first — matches deal_claims_user_idx (user_id, created_at desc). */
-export async function getMyClaimedDealIds(userId: string): Promise<string[]> {
+/** Most-recently-watched first — matches deal_claims_user_idx (user_id, created_at desc). */
+export async function getMyWatchedDealIds(userId: string): Promise<string[]> {
   const { data, error } = await supabase
     .from('deal_claims')
     .select('deal_id')
