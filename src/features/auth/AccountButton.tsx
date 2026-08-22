@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { LogIn, LogOut, User as UserIcon } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { LogIn, LogOut, User as UserIcon, Bookmark } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { useAuth } from './useAuth'
@@ -35,6 +36,14 @@ export function AccountButton() {
       {menuOpen && (
         <div className="absolute right-0 top-11 z-50 w-56 rounded-lg border border-border bg-surface p-2 shadow-2xl">
           <p className="truncate px-2 py-1.5 text-xs text-fg-subtle">{user.email}</p>
+          <Link
+            to="/saved"
+            onClick={() => setMenuOpen(false)}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-fg hover:bg-surface-raised"
+          >
+            <Bookmark className="h-3.5 w-3.5" /> Saved companies
+          </Link>
+          <div className="my-1 border-t border-border" />
           <button
             type="button"
             onClick={async () => {

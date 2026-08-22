@@ -1,6 +1,6 @@
 import { Bookmark } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useSession } from '@/store/useSession'
+import { useSaveState } from '@/features/saved/useSavedCompanies'
 
 interface SaveButtonProps {
   companyId: string
@@ -8,21 +8,21 @@ interface SaveButtonProps {
 }
 
 export function SaveButton({ companyId, size = 'md' }: SaveButtonProps) {
-  const saved = useSession((s) => s.savedCompanyIds.includes(companyId))
-  const toggleSave = useSession((s) => s.toggleSave)
+  const { saved, toggle, pending } = useSaveState(companyId)
 
   return (
     <button
       type="button"
+      disabled={pending}
       onClick={(e) => {
         e.preventDefault()
         e.stopPropagation()
-        toggleSave(companyId)
+        toggle()
       }}
       aria-pressed={saved}
       aria-label={saved ? 'Remove from saved' : 'Save company'}
       className={cn(
-        'flex items-center justify-center rounded-lg border transition-colors',
+        'flex items-center justify-center rounded-lg border transition-colors disabled:cursor-not-allowed disabled:opacity-60',
         saved
           ? 'border-brand/40 bg-brand/15 text-brand'
           : 'border-border bg-surface-raised text-fg-muted hover:border-brand/30 hover:text-brand',

@@ -451,6 +451,24 @@ export async function markAllNotificationsRead(companyIds: string[]) {
  * *_billing_foundations.sql), so this should never return null for a real
  * company_id.
  */
+// ---------------------------------------------------------------------------
+// Saved companies — IDs only, deliberately. The caller combines these with
+// the already-cached company list (useAllCompanies) rather than this
+// function returning full Company objects itself, so saving/loading /saved
+// never triggers a second per-company (or even a second bulk) fetch.
+// ---------------------------------------------------------------------------
+
+/** Most-recently-saved first — matches saved_companies_user_idx (user_id, created_at desc). */
+export async function getSavedCompanyIds(userId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('saved_companies')
+    .select('company_id')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data.map((row) => row.company_id)
+}
+
 export async function getCompanyBillingProfile(companyId: string) {
   const { data, error } = await supabase
     .from('company_billing_profiles')

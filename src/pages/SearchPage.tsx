@@ -4,6 +4,7 @@ import { Search as SearchIcon, Tag, Flame, X } from 'lucide-react'
 import { useAllCompanies, useCategories, useDeals, useTrends, useAllCompanyRatingSummaries } from '@/lib/supabase/hooks'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { CompanyRatingInline } from '@/features/reviews/CompanyRatingInline'
+import { SaveButton } from '@/components/shared/SaveButton'
 import { Input } from '@/components/ui/input'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 
@@ -137,18 +138,20 @@ export function SearchPage() {
       {matchedCompanies.length > 0 && (
         <ResultSection title="Companies">
           {matchedCompanies.map((c) => (
-            <Link
+            <div
               key={c.id}
-              to={`/companies/${c.slug}`}
               className="flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 transition-colors hover:border-brand/30"
             >
-              <CompanyAvatar initials={c.initials} color={c.logoColor} logoUrl={c.logoUrl} size="sm" />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-fg">{c.name}</p>
-                <p className="truncate text-xs text-fg-muted">{c.tagline}</p>
-                <CompanyRatingInline summary={ratingSummariesQuery.data?.get(c.id)} className="mt-0.5" />
-              </div>
-            </Link>
+              <Link to={`/companies/${c.slug}`} className="flex min-w-0 flex-1 items-center gap-3">
+                <CompanyAvatar initials={c.initials} color={c.logoColor} logoUrl={c.logoUrl} size="sm" />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-fg">{c.name}</p>
+                  <p className="truncate text-xs text-fg-muted">{c.tagline}</p>
+                  <CompanyRatingInline summary={ratingSummariesQuery.data?.get(c.id)} className="mt-0.5" />
+                </div>
+              </Link>
+              <SaveButton companyId={c.id} size="sm" />
+            </div>
           ))}
         </ResultSection>
       )}

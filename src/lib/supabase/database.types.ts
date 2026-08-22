@@ -344,6 +344,12 @@ export interface Database {
         Update: Partial<{ rating: number; title: string; body: string; updated_at: string }>
         Relationships: []
       }
+      saved_companies: {
+        Row: { id: string; user_id: string; company_id: string; created_at: string }
+        Insert: { id?: string; user_id: string; company_id: string; created_at?: string }
+        Update: Partial<{ user_id: string; company_id: string; created_at: string }>
+        Relationships: []
+      }
       company_billing_profiles: {
         Row: {
           id: string

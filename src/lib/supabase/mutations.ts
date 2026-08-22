@@ -217,3 +217,27 @@ export async function deleteReview(reviewId: string): Promise<void> {
   const { error } = await supabase.from('reviews').delete().eq('id', reviewId)
   if (error) throw error
 }
+
+// ---------------------------------------------------------------------------
+// Saved companies. Two explicit functions (not a single toggle like
+// toggleCompanyVote) because the caller — useSaveState — already knows the
+// current saved state from the cached id list, so there's nothing to check
+// server-side before writing.
+// ---------------------------------------------------------------------------
+
+/**
+ * 23505 (unique violation) is swallowed rather than thrown: a stale cache
+ * (e.g. two tabs, or a race with an in-flight optimistic update) could send
+ * a save for a company that's already saved — that's not a real error, the
+ * end state the caller wanted is already true. Authorization itself is
+ * enforced by the saved_companies RLS insert policy, not here.
+ */
+export async function saveCompany(userId: string, companyId: string): Promise<void> {
+  const { error } = await supabase.from('saved_companies').insert({ user_id: userId, company_id: companyId })
+  if (error && error.code !== '23505') throw error
+}
+
+export async function unsaveCompany(userId: string, companyId: string): Promise<void> {
+  const { error } = await supabase.from('saved_companies').delete().eq('user_id', userId).eq('company_id', companyId)
+  if (error) throw error
+}

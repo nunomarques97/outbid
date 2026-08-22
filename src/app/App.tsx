@@ -9,6 +9,7 @@ import { CategoriesPage } from '@/pages/CategoriesPage'
 import { CategoryDetailPage } from '@/pages/CategoryDetailPage'
 import { SearchPage } from '@/pages/SearchPage'
 import { CompanyProfilePage } from '@/pages/CompanyProfilePage'
+import { SavedPage } from '@/pages/SavedPage'
 import { BattlePage } from '@/pages/BattlePage'
 import { DealsPage } from '@/pages/DealsPage'
 import { DashboardPage } from '@/pages/DashboardPage'
@@ -31,6 +32,7 @@ export function App() {
                 <Route path="/categories/:slug" element={<CategoryDetailPage />} />
                 <Route path="/search" element={<SearchPage />} />
                 <Route path="/companies/:slug" element={<CompanyProfilePage />} />
+                <Route path="/saved" element={<SavedPage />} />
                 <Route path="/battles/:id" element={<BattlePage />} />
                 <Route path="/deals" element={<DealsPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
