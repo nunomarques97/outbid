@@ -1,23 +1,49 @@
-export type BidSubmitAction = 'free' | 'paid'
+export type BidSubmitAction = 'free' | 'paid' | 'invalid'
+
+export interface BidSubmitDecision {
+  action: BidSubmitAction
+  /**
+   * What Stripe should actually charge: max(target - current, 0), rounded
+   * to cents. Always 0 for 'free' and 'invalid' — the bid itself still
+   * ends up at `targetAmount` once activated, this is only the money that
+   * changes hands to get there.
+   */
+  chargeAmount: number
+}
 
 interface BidSubmitInput {
-  requestedAmount: number
-  /** null = no active bid on this placement yet. */
+  targetAmount: number
+  /** null = no active bid on this placement yet — treated as current = 0. */
   currentActiveAmount: number | null
 }
 
 /**
- * Establishing a new bid, or raising an existing one, is a paid action —
- * Outbid has no recurring billing, so this is the only place money changes
- * hands. Lowering (or resubmitting the same) amount on a bid already paid
- * for is free: no new financial commitment is being made, and the prior
- * payment is never retroactively refunded either way.
+ * Outbid never charges the full new bid amount on a raise — only the
+ * delta above what the company is already paying to hold. Establishing a
+ * bid where none exists is the same rule with current treated as 0.
+ * Lowering (or resubmitting the same) amount is free: no new financial
+ * commitment, and the prior payment is never retroactively refunded
+ * either way.
  *
- * Mirrors place_bid()'s own server-side check exactly (see
- * supabase/migrations/20260822000000_bid_payments.sql) — this only decides
- * which client path to call, it enforces nothing on its own.
+ * This is a UX helper only — it decides which client path to call and
+ * what to show the user before they commit, but the server independently
+ * recomputes all of this from the database (see create-bid-payment and
+ * place_bid() in supabase/migrations/20260822040000_bid_payment_target_amount.sql).
+ * The browser is never trusted for the actual charge amount.
  */
-export function getBidSubmitAction({ requestedAmount, currentActiveAmount }: BidSubmitInput): BidSubmitAction {
-  if (currentActiveAmount === null || requestedAmount > currentActiveAmount) return 'paid'
-  return 'free'
+export function getBidSubmitDecision({ targetAmount, currentActiveAmount }: BidSubmitInput): BidSubmitDecision {
+  if (!Number.isFinite(targetAmount) || targetAmount <= 0) {
+    return { action: 'invalid', chargeAmount: 0 }
+  }
+
+  const current = currentActiveAmount ?? 0
+  if (targetAmount <= current) {
+    return { action: 'free', chargeAmount: 0 }
+  }
+
+  return { action: 'paid', chargeAmount: roundToCents(targetAmount - current) }
+}
+
+function roundToCents(value: number): number {
+  return Math.round(value * 100) / 100
 }

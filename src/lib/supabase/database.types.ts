@@ -397,7 +397,13 @@ export interface Database {
           id: string
           company_id: string
           placement_id: string
+          // Actual EUR amount charged by this payment (the delta above the
+          // company's current active bid at request time, or the full
+          // amount for a brand-new bid) — NOT the resulting bid amount.
           amount: number
+          // The bid amount this payment establishes on success. Deliberately
+          // a separate column from `amount` — see 20260822040000.
+          target_bid_amount: number
           currency: string
           status: BidPaymentStatus
           stripe_checkout_session_id: string | null
@@ -410,6 +416,7 @@ export interface Database {
           company_id: string
           placement_id: string
           amount: number
+          target_bid_amount: number
           currency?: string
           status?: BidPaymentStatus
           stripe_checkout_session_id?: string | null

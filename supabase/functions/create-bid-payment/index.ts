@@ -17,6 +17,14 @@
 // Only after that check passes does it switch to the service-role client
 // for the actual writes, since clients have no insert grant on
 // bid_payments by design.
+//
+// Charge amount (Phase 27B.1): the client sends only the TARGET bid
+// amount it wants to end up at — never a charge amount. This function is
+// the sole place that computes what Stripe actually charges:
+// max(target - current, 0), where `current` is this company's own active
+// bid on this placement, read fresh from the database (not from
+// anything the client supplied). The browser cannot influence the charge
+// beyond choosing the target.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import Stripe from 'npm:stripe@17'
 import { corsHeaders } from '../_shared/cors.ts'
@@ -24,7 +32,7 @@ import { corsHeaders } from '../_shared/cors.ts'
 interface RequestBody {
   companyId: string
   placementId: string
-  amount: number
+  targetAmount: number
 }
 
 Deno.serve(async (req) => {
@@ -57,9 +65,15 @@ Deno.serve(async (req) => {
     }
 
     const body = (await req.json()) as Partial<RequestBody>
-    const { companyId, placementId, amount } = body
-    if (!companyId || !placementId || typeof amount !== 'number' || !(amount > 0)) {
-      return jsonResponse({ error: 'companyId, placementId and a positive amount are required' }, 400)
+    const { companyId, placementId, targetAmount } = body
+    if (
+      !companyId ||
+      !placementId ||
+      typeof targetAmount !== 'number' ||
+      !Number.isFinite(targetAmount) ||
+      !(targetAmount > 0)
+    ) {
+      return jsonResponse({ error: 'companyId, placementId and a positive, finite targetAmount are required' }, 400)
     }
 
     const { data: membership } = await callerClient
@@ -93,12 +107,18 @@ Deno.serve(async (req) => {
       .eq('status', 'active')
       .maybeSingle()
 
-    if (currentBid && amount <= currentBid.amount) {
+    const currentAmount = currentBid?.amount ?? 0
+    if (targetAmount <= currentAmount) {
       return jsonResponse(
         { error: 'This amount does not raise your current bid — lowering a bid is free and does not need payment' },
         400,
       )
     }
+
+    // The only amount that ever gets charged: the delta above what this
+    // company is already paying to hold this placement. Never the full
+    // target — that's the point of this whole phase.
+    const chargeAmount = Math.round((targetAmount - currentAmount) * 100) / 100
 
     // At most one pending payment per (company, placement) at a time — a
     // fresh attempt supersedes any stale one instead of leaving two live
@@ -148,7 +168,14 @@ Deno.serve(async (req) => {
 
     const { data: paymentRow, error: insertError } = await admin
       .from('bid_payments')
-      .insert({ company_id: companyId, placement_id: placementId, amount, currency: 'EUR', status: 'pending' })
+      .insert({
+        company_id: companyId,
+        placement_id: placementId,
+        amount: chargeAmount,
+        target_bid_amount: targetAmount,
+        currency: 'EUR',
+        status: 'pending',
+      })
       .select()
       .single()
     if (insertError || !paymentRow) {
@@ -162,10 +189,10 @@ Deno.serve(async (req) => {
         {
           price_data: {
             currency: 'eur',
-            unit_amount: Math.round(amount * 100),
+            unit_amount: Math.round(chargeAmount * 100),
             product_data: {
               name: `Sponsored bid — ${placement.name}`,
-              description: `One-time payment to set your bid to €${amount.toFixed(2)} on ${placement.name}`,
+              description: `One-time payment of €${chargeAmount.toFixed(2)} to raise your bid from €${currentAmount.toFixed(2)} to €${targetAmount.toFixed(2)} on ${placement.name}`,
             },
           },
           quantity: 1,

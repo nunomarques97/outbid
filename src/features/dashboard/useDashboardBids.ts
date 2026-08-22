@@ -40,6 +40,12 @@ export function useWithdrawBid() {
   })
 }
 
+interface CreateBidPaymentArgs {
+  companyId: string
+  placementId: string
+  targetAmount: number
+}
+
 /**
  * Starts a paid bid (new or raised amount). No cache invalidation here —
  * unlike usePlaceBid/useWithdrawBid, this never changes `bids` itself; it
@@ -47,10 +53,13 @@ export function useWithdrawBid() {
  * becomes real once Stripe confirms payment and the webhook activates it,
  * which this browser session finds out about by refetching after the
  * redirect back (see the `bidPayment` query param handling in
- * DashboardPage), not from this mutation resolving.
+ * DashboardPage), not from this mutation resolving. `targetAmount` is what
+ * the bid should become, not what gets charged — the server computes the
+ * actual charge itself.
  */
 export function useCreateBidPayment() {
   return useMutation({
-    mutationFn: ({ companyId, placementId, amount }: PlaceBidArgs) => createBidPayment(companyId, placementId, amount),
+    mutationFn: ({ companyId, placementId, targetAmount }: CreateBidPaymentArgs) =>
+      createBidPayment(companyId, placementId, targetAmount),
   })
 }

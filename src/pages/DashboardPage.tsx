@@ -8,7 +8,7 @@ import { useAuth } from '@/features/auth/useAuth'
 import { useMyCompanies, useCategories, usePlacements, useActiveBids, useAllCompanies } from '@/lib/supabase/hooks'
 import { getPlacementDisplayName } from '@/lib/supabase/queries'
 import { usePlaceBid, useWithdrawBid, useCreateBidPayment } from '@/features/dashboard/useDashboardBids'
-import { getBidSubmitAction } from '@/lib/bidPayment'
+import { getBidSubmitDecision } from '@/lib/bidPayment'
 import { getRankedBids, isCompanyOutbid } from '@/lib/ranking'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { CompanySwitcher } from '@/features/companies/CompanySwitcher'
@@ -163,6 +163,14 @@ function DashboardContent({ company }: { company: Company }) {
   const withdrawBidMutation = useWithdrawBid()
   const createBidPaymentMutation = useCreateBidPayment()
 
+  // Which single placement (and which action on it) is currently
+  // in-flight — placeBidMutation/withdrawBidMutation/createBidPaymentMutation
+  // are each one shared mutation instance reused across every placement's
+  // card, so their own `isPending` is true for ALL cards at once while any
+  // one of them is running. This scopes the loading state to only the
+  // specific card the user actually clicked.
+  const [pending, setPending] = useState<{ placementId: string; action: 'bid' | 'withdraw' } | null>(null)
+
   const loading =
     categoriesQuery.isLoading || placementsQuery.isLoading || bidsQuery.isLoading || allCompaniesQuery.isLoading
   const errored =
@@ -202,39 +210,69 @@ function DashboardContent({ company }: { company: Company }) {
     })
 
   // currentAmount is null for a placement this company isn't bidding on
-  // yet (StartBidCard) — see getBidSubmitAction for why that also means
-  // "paid".
+  // yet (StartBidCard) — see getBidSubmitDecision for why that also means
+  // "paid". `amount` here is the TARGET bid the user wants, never a charge
+  // amount — the server (create-bid-payment / place_bid) independently
+  // recomputes both the free/paid decision and the exact charge from the
+  // database; getBidSubmitDecision only decides which client path to call
+  // and what to show while that's in flight.
   function handlePlaceBid(placementId: string, name: string, amount: number, currentAmount: number | null) {
-    const action = getBidSubmitAction({ requestedAmount: amount, currentActiveAmount: currentAmount })
+    const decision = getBidSubmitDecision({ targetAmount: amount, currentActiveAmount: currentAmount })
 
-    if (action === 'free') {
+    if (decision.action === 'invalid') {
+      toast.error('Enter a valid bid amount.')
+      return
+    }
+
+    setPending({ placementId, action: 'bid' })
+
+    if (decision.action === 'free') {
       placeBidMutation.mutate(
         { companyId: company.id, placementId, amount },
         {
-          onSuccess: () => toast.success(`Your bid on ${name} is now ${formatCurrency(amount)}`),
-          onError: (err) => toast.error(err instanceof Error ? err.message : 'Could not update your bid.'),
+          onSuccess: () => {
+            toast.success(`Your bid on ${name} is now ${formatCurrency(amount)}`)
+            setPending(null)
+          },
+          onError: (err) => {
+            toast.error(err instanceof Error ? err.message : 'Could not update your bid.')
+            setPending(null)
+          },
         },
       )
       return
     }
 
     createBidPaymentMutation.mutate(
-      { companyId: company.id, placementId, amount },
+      { companyId: company.id, placementId, targetAmount: amount },
       {
         onSuccess: (checkoutUrl) => {
+          // Left pending on purpose: the browser is about to navigate away
+          // to Stripe Checkout, so this placement should stay showing its
+          // loading state right up until the redirect actually happens.
           window.location.href = checkoutUrl
         },
-        onError: (err) => toast.error(err instanceof Error ? err.message : 'Could not start payment.'),
+        onError: (err) => {
+          toast.error(err instanceof Error ? err.message : 'Could not start payment.')
+          setPending(null)
+        },
       },
     )
   }
 
   function handleWithdrawBid(placementId: string, name: string) {
+    setPending({ placementId, action: 'withdraw' })
     withdrawBidMutation.mutate(
       { companyId: company.id, placementId },
       {
-        onSuccess: () => toast.success(`Withdrew your bid from ${name}`),
-        onError: (err) => toast.error(err instanceof Error ? err.message : 'Could not withdraw your bid.'),
+        onSuccess: () => {
+          toast.success(`Withdrew your bid from ${name}`)
+          setPending(null)
+        },
+        onError: (err) => {
+          toast.error(err instanceof Error ? err.message : 'Could not withdraw your bid.')
+          setPending(null)
+        },
       },
     )
   }
@@ -320,8 +358,8 @@ function DashboardContent({ company }: { company: Company }) {
                 <BidAdjustControl
                   currentAmount={p.myBid.amount}
                   leaderAmount={p.leader.amount}
-                  submitting={placeBidMutation.isPending || createBidPaymentMutation.isPending}
-                  withdrawing={withdrawBidMutation.isPending}
+                  submitting={pending?.placementId === p.placement.id && pending.action === 'bid'}
+                  withdrawing={pending?.placementId === p.placement.id && pending.action === 'withdraw'}
                   onSubmit={(amount) => handlePlaceBid(p.placement.id, name, amount, p.myBid.amount)}
                   onWithdraw={() => handleWithdrawBid(p.placement.id, name)}
                 />
@@ -347,7 +385,7 @@ function DashboardContent({ company }: { company: Company }) {
                     leaderAmount={leader?.amount ?? 0}
                     activeBidderCount={ranked.length}
                     maxSponsoredSlots={placement.maxSponsoredSlots}
-                    submitting={createBidPaymentMutation.isPending}
+                    submitting={pending?.placementId === placement.id && pending.action === 'bid'}
                     onSubmit={(amount) => handlePlaceBid(placement.id, name, amount, null)}
                   />
                 )
