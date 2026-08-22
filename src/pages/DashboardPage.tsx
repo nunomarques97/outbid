@@ -145,12 +145,28 @@ function DashboardWithCompany({ company }: { company: Company }) {
   )
 }
 
+const DASHBOARD_TABS = ['overview', 'bids', 'deals', 'billing'] as const
+type DashboardTab = (typeof DASHBOARD_TABS)[number]
+
+function isDashboardTab(value: string | null): value is DashboardTab {
+  return DASHBOARD_TABS.includes(value as DashboardTab)
+}
+
 function DashboardContent({ company }: { company: Company }) {
   const categoriesQuery = useCategories()
   const placementsQuery = usePlacements()
   const bidsQuery = useActiveBids()
   const allCompaniesQuery = useAllCompanies()
-  const [tab, setTab] = useState('overview')
+  // Lets the homepage "Create a deal" CTA (and any other future link) open
+  // the dashboard directly on a specific tab via ?tab=deals — read once at
+  // mount, same as every other "initial tab" pattern; the tab itself still
+  // lives in local state afterward so clicking between tabs doesn't rewrite
+  // the URL.
+  const [searchParams] = useSearchParams()
+  const [tab, setTab] = useState<DashboardTab>(() => {
+    const requested = searchParams.get('tab')
+    return isDashboardTab(requested) ? requested : 'overview'
+  })
   const placeBidMutation = usePlaceBid()
   const createBidPaymentMutation = useCreateBidPayment()
 
@@ -248,7 +264,7 @@ function DashboardContent({ company }: { company: Company }) {
   }
 
   return (
-    <Tabs value={tab} onValueChange={setTab} className="mt-8">
+    <Tabs value={tab} onValueChange={(value) => isDashboardTab(value) && setTab(value)} className="mt-8">
       <div className="overflow-x-auto">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>

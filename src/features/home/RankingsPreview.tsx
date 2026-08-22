@@ -48,37 +48,47 @@ export function RankingsPreview() {
           const topOrganic = getOrganicRanking(categoryCompanies, bids, placement).slice(0, 2)
 
           return (
-            <Link
+            <div
               key={category.id}
-              to={`/categories/${category.slug}`}
               className="rounded-xl border border-border bg-surface p-5 transition-colors hover:border-brand/30"
             >
-              <div className="mb-4 flex items-center gap-2">
+              <Link
+                to={`/categories/${category.slug}`}
+                className="group mb-4 flex items-center gap-2 -m-1 rounded-lg p-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+              >
                 <Icon className="h-4 w-4 text-fg-muted" />
-                <p className="font-semibold text-fg">{category.name}</p>
-              </div>
+                <p className="font-semibold text-fg group-hover:text-brand">{category.name}</p>
+                <Icons.ChevronRight className="ml-auto h-4 w-4 text-fg-subtle opacity-0 transition-opacity group-hover:opacity-100" />
+              </Link>
               <div className="flex flex-col gap-2">
                 {topSponsoredCompany && (
-                  <div className="flex items-center gap-2.5 rounded-lg border border-sponsored/25 bg-surface-raised px-3 py-2 shadow-glow-gold">
+                  <Link
+                    to={`/companies/${topSponsoredCompany.slug}`}
+                    className="group flex items-center gap-2.5 rounded-lg border border-sponsored/25 bg-surface-raised px-3 py-2 shadow-glow-gold transition-colors hover:border-sponsored/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+                  >
                     <CompanyAvatar initials={topSponsoredCompany.initials} color={topSponsoredCompany.logoColor} logoUrl={topSponsoredCompany.logoUrl} size="sm" />
-                    <span className="flex-1 truncate text-sm text-fg">{topSponsoredCompany.name}</span>
+                    <span className="flex-1 truncate text-sm text-fg group-hover:underline">{topSponsoredCompany.name}</span>
                     <CompanyRatingInline summary={ratingSummariesQuery.data?.get(topSponsoredCompany.id)} className="shrink-0" />
                     <SponsoredBadge size="sm" />
-                  </div>
+                  </Link>
                 )}
                 {topOrganic.map(({ company }, i) => (
-                  <div key={company.id} className="flex items-center gap-2.5 px-3 py-1">
+                  <Link
+                    key={company.id}
+                    to={`/companies/${company.slug}`}
+                    className="group flex items-center gap-2.5 rounded-lg px-3 py-1 transition-colors hover:bg-surface-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+                  >
                     <span className="font-numeral w-3 text-center text-xs text-organic">{i + 1}</span>
                     <CompanyAvatar initials={company.initials} color={company.logoColor} logoUrl={company.logoUrl} size="sm" />
-                    <span className="flex-1 truncate text-sm text-fg-muted">{company.name}</span>
+                    <span className="flex-1 truncate text-sm text-fg-muted group-hover:text-fg">{company.name}</span>
                     <CompanyRatingInline summary={ratingSummariesQuery.data?.get(company.id)} className="shrink-0" />
-                  </div>
+                  </Link>
                 ))}
                 {!topSponsoredCompany && topOrganic.length === 0 && (
                   <p className="px-3 py-1 text-sm text-fg-subtle">No companies here yet.</p>
                 )}
               </div>
-            </Link>
+            </div>
           )
         })}
       </div>

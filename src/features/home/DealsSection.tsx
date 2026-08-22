@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
 import { Tag } from 'lucide-react'
 import { useDeals, useAllCompanies } from '@/lib/supabase/hooks'
+import { getActiveDealsForDisplay } from '@/lib/dealState'
 import { DealCard } from '@/components/shared/DealCard'
+import { CreateDealCta } from '@/features/home/CreateDealCta'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 
 export function DealsSection() {
@@ -11,8 +13,7 @@ export function DealsSection() {
   if (dealsQuery.isLoading || companiesQuery.isLoading) return <LoadingState label="Loading deals…" />
   if (dealsQuery.isError || companiesQuery.isError) return <ErrorState message="Couldn't load deals." />
 
-  const featured = (dealsQuery.data ?? []).slice(0, 3)
-  if (featured.length === 0) return null
+  const featured = getActiveDealsForDisplay(dealsQuery.data ?? [], 3)
   const companies = companiesQuery.data ?? []
 
   return (
@@ -26,13 +27,25 @@ export function DealsSection() {
           View all deals
         </Link>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {featured.map((deal) => {
-          const company = companies.find((c) => c.id === deal.companyId)
-          if (!company) return null
-          return <DealCard key={deal.id} deal={deal} company={company} />
-        })}
-      </div>
+
+      {featured.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border bg-surface/60 p-8 text-center">
+          <p className="font-semibold text-fg">No live deals right now</p>
+          <p className="mx-auto mt-1.5 max-w-md text-sm text-fg-muted">
+            Advertisers haven't posted an active deal — check back soon.
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {featured.map((deal) => {
+            const company = companies.find((c) => c.id === deal.companyId)
+            if (!company) return null
+            return <DealCard key={deal.id} deal={deal} company={company} />
+          })}
+        </div>
+      )}
+
+      <CreateDealCta className="mt-6" />
     </section>
   )
 }
