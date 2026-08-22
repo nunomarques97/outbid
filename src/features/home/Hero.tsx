@@ -1,15 +1,17 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowRight, TrendingUp, Shuffle } from 'lucide-react'
+import { ArrowRight, TrendingUp, Shuffle, ChevronDown, ChevronUp } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { useAllCompanies, useCategories, usePlacements, useActiveBids } from '@/lib/supabase/hooks'
 import { getGlobalPlacement } from '@/lib/supabase/queries'
-import { getTopBidders } from '@/lib/ranking'
+import { getTopBidders, type TopBidderEntry } from '@/lib/ranking'
 import { formatCurrency } from '@/lib/utils'
 
-const HERO_TOP_BIDDER_COUNT = 3
+const HERO_STATIC_COUNT = 3
+const HERO_MARQUEE_MAX = 20
 
 export function Hero() {
   const navigate = useNavigate()
@@ -17,12 +19,15 @@ export function Hero() {
   const categoryCount = useCategories().data?.length
   const placementsQuery = usePlacements()
   const bidsQuery = useActiveBids()
+  const [expanded, setExpanded] = useState(false)
 
   const companies = companiesQuery.data ?? []
   const globalPlacement = getGlobalPlacement(placementsQuery.data ?? [])
-  const topBidders = globalPlacement
-    ? getTopBidders(companies, bidsQuery.data ?? [], globalPlacement.id).slice(0, HERO_TOP_BIDDER_COUNT)
+  const allTopBidders = globalPlacement
+    ? getTopBidders(companies, bidsQuery.data ?? [], globalPlacement.id).slice(0, HERO_MARQUEE_MAX)
     : []
+  const staticTop = allTopBidders.slice(0, HERO_STATIC_COUNT)
+  const marqueeRest = allTopBidders.slice(HERO_STATIC_COUNT)
 
   function handleRateRandomCompany() {
     if (companies.length === 0) return
@@ -84,25 +89,76 @@ export function Hero() {
               <span className="h-1.5 w-1.5 rounded-full bg-sponsored" /> Sponsored
             </span>
           </div>
-          {topBidders.length === 0 ? (
+          {staticTop.length === 0 ? (
             <p className="py-6 text-center text-sm text-fg-muted">No sponsored bidders yet — be the first.</p>
           ) : (
-            <div className="flex flex-col gap-2.5">
-              {topBidders.map((entry, i) => (
-                <motion.div
-                  key={entry.company.id}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.15 + i * 0.1, duration: 0.4 }}
-                  className="flex items-center gap-3 rounded-lg border border-sponsored/25 bg-surface-raised p-3 shadow-glow-gold"
+            <>
+              <div className="flex flex-col gap-2.5">
+                {staticTop.map((entry, i) => (
+                  <motion.div
+                    key={entry.company.id}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.15 + i * 0.1, duration: 0.4 }}
+                    className="flex items-center gap-3 rounded-lg border border-sponsored/25 bg-surface-raised p-3 shadow-glow-gold"
+                  >
+                    <BidderRow entry={entry} />
+                  </motion.div>
+                ))}
+              </div>
+
+              {marqueeRest.length > 0 && !expanded && (
+                <div className="relative mt-2.5 h-[136px] overflow-hidden">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-4 bg-gradient-to-b from-surface to-transparent" />
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-4 bg-gradient-to-t from-surface to-transparent" />
+                  <motion.div
+                    className="flex flex-col gap-2.5"
+                    animate={{ y: ['0%', '-50%'] }}
+                    transition={{ duration: marqueeRest.length * 2.2, repeat: Infinity, ease: 'linear' }}
+                  >
+                    {[...marqueeRest, ...marqueeRest].map((entry, i) => (
+                      <div
+                        key={`${entry.company.id}-${i}`}
+                        className="flex items-center gap-3 rounded-lg border border-border bg-surface-raised/60 p-2.5"
+                      >
+                        <BidderRow entry={entry} compact />
+                      </div>
+                    ))}
+                  </motion.div>
+                </div>
+              )}
+
+              {expanded && marqueeRest.length > 0 && (
+                <div className="mt-2.5 flex max-h-[280px] flex-col gap-2.5 overflow-y-auto pr-1">
+                  {marqueeRest.map((entry) => (
+                    <div
+                      key={entry.company.id}
+                      className="flex items-center gap-3 rounded-lg border border-border bg-surface-raised/60 p-2.5"
+                    >
+                      <BidderRow entry={entry} compact />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {marqueeRest.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setExpanded((v) => !v)}
+                  className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-semibold text-fg-muted transition-colors hover:text-fg"
                 >
-                  <span className="font-numeral w-4 text-center text-sponsored">{entry.bid.rank}</span>
-                  <CompanyAvatar initials={entry.company.initials} color={entry.company.logoColor} logoUrl={entry.company.logoUrl} size="sm" />
-                  <span className="flex-1 truncate text-sm font-medium text-fg">{entry.company.name}</span>
-                  <span className="font-numeral text-sm text-sponsored">{formatCurrency(entry.bid.amount)}</span>
-                </motion.div>
-              ))}
-            </div>
+                  {expanded ? (
+                    <>
+                      Show less <ChevronUp className="h-3.5 w-3.5" />
+                    </>
+                  ) : (
+                    <>
+                      Show all {allTopBidders.length} <ChevronDown className="h-3.5 w-3.5" />
+                    </>
+                  )}
+                </button>
+              )}
+            </>
           )}
           <p className="mt-4 text-xs leading-relaxed text-fg-subtle">
             Higher bid, higher position. If a competitor outbids them tomorrow, this order
@@ -111,5 +167,16 @@ export function Hero() {
         </motion.div>
       </div>
     </section>
+  )
+}
+
+function BidderRow({ entry, compact }: { entry: TopBidderEntry; compact?: boolean }) {
+  return (
+    <>
+      <span className={`font-numeral w-4 text-center ${compact ? 'text-fg-subtle' : 'text-sponsored'}`}>{entry.bid.rank}</span>
+      <CompanyAvatar initials={entry.company.initials} color={entry.company.logoColor} logoUrl={entry.company.logoUrl} size="sm" />
+      <span className="flex-1 truncate text-sm font-medium text-fg">{entry.company.name}</span>
+      <span className={`font-numeral text-sm ${compact ? 'text-fg-muted' : 'text-sponsored'}`}>{formatCurrency(entry.bid.amount)}</span>
+    </>
   )
 }
