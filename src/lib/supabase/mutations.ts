@@ -90,6 +90,24 @@ export async function withdrawBid(companyId: string, placementId: string) {
   return data
 }
 
+/**
+ * Starts a one-time Stripe payment for a new or raised bid — the only path
+ * that can result in a bid actually being placed at that amount. Returns a
+ * Checkout URL to redirect the browser to; nothing in the app is allowed to
+ * treat this call itself as "the bid is now active" — that only becomes
+ * true once Stripe confirms payment and the webhook activates it (see
+ * supabase/functions/stripe-webhook and activate_bid_payment()).
+ */
+export async function createBidPayment(companyId: string, placementId: string, amount: number) {
+  const { data, error } = await supabase.functions.invoke<{ checkoutUrl: string; error?: string }>(
+    'create-bid-payment',
+    { body: { companyId, placementId, amount } },
+  )
+  if (error) throw error
+  if (!data?.checkoutUrl) throw new Error(data?.error ?? 'Could not start payment')
+  return data.checkoutUrl
+}
+
 export async function createCompany(input: {
   slug: string
   name: string

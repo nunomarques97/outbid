@@ -382,6 +382,20 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
+# Phase 27B — bid payments. Called from the browser with the caller's own
+# Supabase session, so JWT verification stays on; the function re-derives
+# is_company_member itself before doing anything.
+[functions.create-bid-payment]
+enabled = true
+verify_jwt = true
+
+# Called directly by Stripe, with no Supabase session — there is no JWT to
+# verify. Authenticity comes entirely from the Stripe-Signature header,
+# checked inside the function via the webhook signing secret.
+[functions.stripe-webhook]
+enabled = true
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

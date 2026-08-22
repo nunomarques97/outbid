@@ -24,6 +24,7 @@ export type CompanyRole = 'owner' | 'editor'
 export type NotificationType = 'outbid' | 'bid_confirmed'
 export type BattleSide = 'a' | 'b'
 export type BillingStatus = 'inactive' | 'active'
+export type BidPaymentStatus = 'pending' | 'succeeded' | 'cancelled'
 
 export interface Database {
   public: {
@@ -384,6 +385,39 @@ export interface Database {
           updated_at?: string
         }
         Update: Partial<Database['public']['Tables']['company_billing_profiles']['Insert']>
+        Relationships: []
+      }
+      // Read-only from the frontend's perspective: rows are created and
+      // transitioned only by the create-bid-payment / stripe-webhook Edge
+      // Functions (service role), never by the browser client. Insert/
+      // Update are still typed, matching every other table here, but no
+      // client code calls them — there is no RLS policy that would let it.
+      bid_payments: {
+        Row: {
+          id: string
+          company_id: string
+          placement_id: string
+          amount: number
+          currency: string
+          status: BidPaymentStatus
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          placement_id: string
+          amount: number
+          currency?: string
+          status?: BidPaymentStatus
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['bid_payments']['Insert']>
         Relationships: []
       }
     }

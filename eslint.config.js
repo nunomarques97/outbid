@@ -6,7 +6,11 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // Edge Functions run on Deno, not in the browser — a different runtime
+  // with its own globals (Deno.*) and its own toolchain (deployed via the
+  // Supabase CLI, not built by tsc/vite). They're intentionally out of
+  // scope for this browser-targeted config.
+  globalIgnores(['dist', 'supabase/functions']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

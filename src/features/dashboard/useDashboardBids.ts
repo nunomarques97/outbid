@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { placeBid, withdrawBid } from '@/lib/supabase/mutations'
+import { placeBid, withdrawBid, createBidPayment } from '@/lib/supabase/mutations'
 
 /**
  * No bidding logic here — both mutations just call the existing place_bid /
@@ -37,5 +37,20 @@ export function useWithdrawBid() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activeBids'] })
     },
+  })
+}
+
+/**
+ * Starts a paid bid (new or raised amount). No cache invalidation here —
+ * unlike usePlaceBid/useWithdrawBid, this never changes `bids` itself; it
+ * only returns a Checkout URL for the caller to redirect to. The bid
+ * becomes real once Stripe confirms payment and the webhook activates it,
+ * which this browser session finds out about by refetching after the
+ * redirect back (see the `bidPayment` query param handling in
+ * DashboardPage), not from this mutation resolving.
+ */
+export function useCreateBidPayment() {
+  return useMutation({
+    mutationFn: ({ companyId, placementId, amount }: PlaceBidArgs) => createBidPayment(companyId, placementId, amount),
   })
 }

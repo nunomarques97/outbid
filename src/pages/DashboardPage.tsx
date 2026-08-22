@@ -1,12 +1,14 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Plus, Pencil, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
 import type { Company } from '@/mocks/types'
 import { useAuth } from '@/features/auth/useAuth'
 import { useMyCompanies, useCategories, usePlacements, useActiveBids, useAllCompanies } from '@/lib/supabase/hooks'
 import { getPlacementDisplayName } from '@/lib/supabase/queries'
-import { usePlaceBid, useWithdrawBid } from '@/features/dashboard/useDashboardBids'
+import { usePlaceBid, useWithdrawBid, useCreateBidPayment } from '@/features/dashboard/useDashboardBids'
+import { getBidSubmitAction } from '@/lib/bidPayment'
 import { getRankedBids, isCompanyOutbid } from '@/lib/ranking'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { CompanySwitcher } from '@/features/companies/CompanySwitcher'
@@ -25,6 +27,7 @@ import { formatCurrency } from '@/lib/utils'
 export function DashboardPage() {
   const { user, loading: authLoading } = useAuth()
   const myCompaniesQuery = useMyCompanies()
+  useBidPaymentRedirectHandling()
 
   if (authLoading) return <LoadingState label="Loading your dashboard…" />
   if (!user) return <SignedOutState />
@@ -38,6 +41,44 @@ export function DashboardPage() {
   if (myCompaniesQuery.data.length === 0) return <NoCompanyState />
 
   return <DashboardWithCompanySelection companies={myCompaniesQuery.data} />
+}
+
+/**
+ * Handles the redirect back from Stripe Checkout. The URL param is only
+ * ever a hint for which toast to show and when to nudge a refetch — it is
+ * NOT treated as proof the bid actually changed. The real state comes from
+ * the stripe-webhook Edge Function activating the payment server-side,
+ * which is typically near-instant but is inherently async: this refetch
+ * might land a moment before or after it, in which case the next natural
+ * refetch (focus, interval, or another action) picks up the true state.
+ */
+function useBidPaymentRedirectHandling() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    const status = searchParams.get('bidPayment')
+    if (!status) return
+
+    if (status === 'success') {
+      toast.success('Payment received — confirming your bid, this may take a few seconds.')
+      queryClient.invalidateQueries({ queryKey: ['activeBids'] })
+    } else if (status === 'cancelled') {
+      toast('Payment cancelled — your bid was not changed.')
+    }
+
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('bidPayment')
+        return next
+      },
+      { replace: true },
+    )
+    // The `status` guard above makes this safe to depend on the whole
+    // (identity-unstable) searchParams object: once the param is removed,
+    // status is null on the next run and the body no-ops.
+  }, [searchParams, setSearchParams, queryClient])
 }
 
 function SignedOutState() {
@@ -120,6 +161,7 @@ function DashboardContent({ company }: { company: Company }) {
   const [tab, setTab] = useState('overview')
   const placeBidMutation = usePlaceBid()
   const withdrawBidMutation = useWithdrawBid()
+  const createBidPaymentMutation = useCreateBidPayment()
 
   const loading =
     categoriesQuery.isLoading || placementsQuery.isLoading || bidsQuery.isLoading || allCompaniesQuery.isLoading
@@ -159,12 +201,30 @@ function DashboardContent({ company }: { company: Company }) {
       return { placement, ranked, leader }
     })
 
-  function handlePlaceBid(placementId: string, name: string, amount: number) {
-    placeBidMutation.mutate(
+  // currentAmount is null for a placement this company isn't bidding on
+  // yet (StartBidCard) — see getBidSubmitAction for why that also means
+  // "paid".
+  function handlePlaceBid(placementId: string, name: string, amount: number, currentAmount: number | null) {
+    const action = getBidSubmitAction({ requestedAmount: amount, currentActiveAmount: currentAmount })
+
+    if (action === 'free') {
+      placeBidMutation.mutate(
+        { companyId: company.id, placementId, amount },
+        {
+          onSuccess: () => toast.success(`Your bid on ${name} is now ${formatCurrency(amount)}`),
+          onError: (err) => toast.error(err instanceof Error ? err.message : 'Could not update your bid.'),
+        },
+      )
+      return
+    }
+
+    createBidPaymentMutation.mutate(
       { companyId: company.id, placementId, amount },
       {
-        onSuccess: () => toast.success(`You're now bidding ${formatCurrency(amount)} on ${name}`),
-        onError: (err) => toast.error(err instanceof Error ? err.message : 'Could not update your bid.'),
+        onSuccess: (checkoutUrl) => {
+          window.location.href = checkoutUrl
+        },
+        onError: (err) => toast.error(err instanceof Error ? err.message : 'Could not start payment.'),
       },
     )
   }
@@ -260,9 +320,9 @@ function DashboardContent({ company }: { company: Company }) {
                 <BidAdjustControl
                   currentAmount={p.myBid.amount}
                   leaderAmount={p.leader.amount}
-                  submitting={placeBidMutation.isPending}
+                  submitting={placeBidMutation.isPending || createBidPaymentMutation.isPending}
                   withdrawing={withdrawBidMutation.isPending}
-                  onSubmit={(amount) => handlePlaceBid(p.placement.id, name, amount)}
+                  onSubmit={(amount) => handlePlaceBid(p.placement.id, name, amount, p.myBid.amount)}
                   onWithdraw={() => handleWithdrawBid(p.placement.id, name)}
                 />
               </div>
@@ -287,8 +347,8 @@ function DashboardContent({ company }: { company: Company }) {
                     leaderAmount={leader?.amount ?? 0}
                     activeBidderCount={ranked.length}
                     maxSponsoredSlots={placement.maxSponsoredSlots}
-                    submitting={placeBidMutation.isPending}
-                    onSubmit={(amount) => handlePlaceBid(placement.id, name, amount)}
+                    submitting={createBidPaymentMutation.isPending}
+                    onSubmit={(amount) => handlePlaceBid(placement.id, name, amount, null)}
                   />
                 )
               })}
