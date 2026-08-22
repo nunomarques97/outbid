@@ -3,7 +3,6 @@ import { toast } from 'sonner'
 import { useAuth } from '@/features/auth/useAuth'
 import { getSavedCompanyIds } from '@/lib/supabase/queries'
 import { saveCompany, unsaveCompany } from '@/lib/supabase/mutations'
-import { useSession } from '@/store/useSession'
 
 const STALE_TIME = 30_000
 
@@ -70,11 +69,12 @@ function useUnsaveCompanyMutation() {
 }
 
 /**
- * SaveButton's one dependency — mirrors useCompanyVote's shape exactly
- * (live via Supabase when signed in against a configured project, the
- * existing Zustand session otherwise) so SaveButton itself barely changes.
- * Unlike votes, there is no public fallback *read* for saves (they're
- * private), so the signed-out path is purely local, same as it is today.
+ * SaveButton's one dependency. Persistent customer actions require an
+ * authenticated user (Phase 31) — there is no signed-out fallback anymore:
+ * `signedIn` tells SaveButton whether to call `toggle()` or open the
+ * sign-in dialog instead, and `toggle()` itself is a no-op when signed out
+ * as a second, defensive guard against ever reaching Supabase without a
+ * real session.
  */
 export function useSaveState(companyId: string) {
   const { user, isConfigured } = useAuth()
@@ -82,25 +82,17 @@ export function useSaveState(companyId: string) {
   const saveMutation = useSaveCompanyMutation()
   const unsaveMutation = useUnsaveCompanyMutation()
 
-  const localSaved = useSession((s) => s.savedCompanyIds.includes(companyId))
-  const localToggle = useSession((s) => s.toggleSave)
-
-  const liveEnabled = isConfigured && Boolean(user)
-
-  if (liveEnabled) {
-    const saved = savedIdsQuery.data?.includes(companyId) ?? false
-    return {
-      saved,
-      toggle: () => (saved ? unsaveMutation.mutate(companyId) : saveMutation.mutate(companyId)),
-      pending: saveMutation.isPending || unsaveMutation.isPending,
-      isLive: true as const,
-    }
-  }
+  const signedIn = isConfigured && Boolean(user)
+  const saved = signedIn ? (savedIdsQuery.data?.includes(companyId) ?? false) : false
 
   return {
-    saved: localSaved,
-    toggle: () => localToggle(companyId),
-    pending: false,
-    isLive: false as const,
+    saved,
+    toggle: () => {
+      if (!signedIn) return
+      if (saved) unsaveMutation.mutate(companyId)
+      else saveMutation.mutate(companyId)
+    },
+    pending: saveMutation.isPending || unsaveMutation.isPending,
+    signedIn,
   }
 }

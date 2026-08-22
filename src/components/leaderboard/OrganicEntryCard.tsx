@@ -35,7 +35,7 @@ export function OrganicEntryCard({ company, rank, ratingSummary, categoryNames }
         </div>
       </Link>
       <div className="flex shrink-0 items-center gap-2">
-        <VoteButton companyId={company.id} companySlug={company.slug} baseVotes={company.organicVotes} size="sm" />
+        <VoteButton companySlug={company.slug} baseVotes={company.organicVotes} size="sm" />
         <SaveButton companyId={company.id} size="sm" />
       </div>
     </div>

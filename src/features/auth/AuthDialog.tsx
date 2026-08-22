@@ -11,9 +11,17 @@ import { useAuth } from './useAuth'
 interface AuthDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Lets a specific gated action (vote, save, ...) explain why sign-in is required. Defaults to the generic copy. */
+  title?: string
+  description?: string
 }
 
-export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
+export function AuthDialog({
+  open,
+  onOpenChange,
+  title = 'Sign in to Outbid',
+  description = 'Vote, save companies, and manage advertiser accounts.',
+}: AuthDialogProps) {
   const { isConfigured } = useAuth()
   const [view, setView] = useState<'auth' | 'reset'>('auth')
 
@@ -32,8 +40,8 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
           <ResetPasswordForm onBack={() => setView('auth')} />
         ) : (
           <>
-            <DialogTitle>Sign in to Outbid</DialogTitle>
-            <DialogDescription>Vote, save companies, and manage advertiser accounts.</DialogDescription>
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>{description}</DialogDescription>
 
             {!isConfigured ? (
               <div className="mt-5 flex items-start gap-3 rounded-lg border border-danger/30 bg-danger/10 p-4 text-sm text-fg-muted">

@@ -137,7 +137,7 @@ function CompanyProfileContent({ company }: { company: Company }) {
           </div>
         </div>
         <div className="flex shrink-0 gap-2">
-          <VoteButton companyId={company.id} companySlug={company.slug} baseVotes={company.organicVotes} />
+          <VoteButton companySlug={company.slug} baseVotes={company.organicVotes} />
           <SaveButton companyId={company.id} />
         </div>
       </div>

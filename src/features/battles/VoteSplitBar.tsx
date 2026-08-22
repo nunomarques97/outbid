@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Crown } from 'lucide-react'
 import type { Company } from '@/mocks/types'
 import { CompanyAvatar } from '@/components/ui/avatar'
+import { AuthDialog } from '@/features/auth/AuthDialog'
 import { useBattleVote } from './useBattleVote'
 import { formatCompactNumber, cn } from '@/lib/utils'
 
@@ -14,13 +16,22 @@ interface VoteSplitBarProps {
 }
 
 export function VoteSplitBar({ battleId, companyA, companyB, votesA, votesB }: VoteSplitBarProps) {
-  const { votedA, votedB, vote } = useBattleVote(battleId)
+  const { votedA, votedB, vote, signedIn } = useBattleVote(battleId)
+  const [authOpen, setAuthOpen] = useState(false)
 
   const total = votesA + votesB || 1
   const pctA = Math.round((votesA / total) * 100)
   const pctB = 100 - pctA
   const aLeading = votesA > votesB
   const bLeading = votesB > votesA
+
+  function handleVote(side: 'a' | 'b') {
+    if (!signedIn) {
+      setAuthOpen(true)
+      return
+    }
+    vote(side)
+  }
 
   return (
     <div>
@@ -31,7 +42,7 @@ export function VoteSplitBar({ battleId, companyA, companyB, votesA, votesB }: V
           votes={votesA}
           leading={aLeading}
           voted={votedA}
-          onClick={() => vote('a')}
+          onClick={() => handleVote('a')}
           align="left"
         />
         <div className="z-10 flex shrink-0 items-center">
@@ -45,7 +56,7 @@ export function VoteSplitBar({ battleId, companyA, companyB, votesA, votesB }: V
           votes={votesB}
           leading={bLeading}
           voted={votedB}
-          onClick={() => vote('b')}
+          onClick={() => handleVote('b')}
           align="right"
         />
       </div>
@@ -61,6 +72,12 @@ export function VoteSplitBar({ battleId, companyA, companyB, votesA, votesB }: V
           transition={{ type: 'spring', stiffness: 120, damping: 20 }}
         />
       </div>
+      <AuthDialog
+        open={authOpen}
+        onOpenChange={setAuthOpen}
+        title="Sign in to vote"
+        description="Create an account to help shape Outbid's rankings."
+      />
     </div>
   )
 }

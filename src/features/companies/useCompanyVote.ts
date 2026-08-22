@@ -2,31 +2,26 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/useAuth'
 import { getCompanyVoteState } from '@/lib/supabase/queries'
 import { toggleCompanyVote } from '@/lib/supabase/mutations'
-import { useSession, getVoteCount } from '@/store/useSession'
 
 /**
- * A company's vote state + a toggle action, sourced from Supabase when the
- * user is signed in against a configured project, and from the existing
- * Zustand session (exactly today's behavior, untouched) otherwise. This is
- * the one place that branches — VoteButton itself doesn't need to know
- * which mode it's in.
+ * A company's vote state + a toggle action. Persistent customer actions
+ * require an authenticated user (Phase 31) — there is no signed-out
+ * fallback anymore: `signedIn` tells VoteButton whether to call `toggle()`
+ * or open the sign-in dialog instead, and `toggle()` itself is a no-op
+ * when signed out as a second, defensive guard against ever reaching
+ * Supabase without a real session.
  */
-export function useCompanyVote(companyId: string, companySlug: string, baseVotes: number) {
+export function useCompanyVote(companySlug: string, baseVotes: number) {
   const { user, isConfigured } = useAuth()
   const queryClient = useQueryClient()
 
-  const votes = useSession((s) => s.votes)
-  const localVote = useSession((s) => s.vote)
-  const localVoted = votes[`company:${companyId}`] === 1
-  const localCount = getVoteCount(baseVotes, votes, 'company', companyId)
-
-  const liveEnabled = isConfigured && Boolean(user)
+  const signedIn = isConfigured && Boolean(user)
   const queryKey = ['companyVote', companySlug, user?.id] as const
 
   const { data: live } = useQuery({
     queryKey,
     queryFn: () => getCompanyVoteState(companySlug, user!.id),
-    enabled: liveEnabled,
+    enabled: signedIn,
   })
 
   const mutation = useMutation({
@@ -43,19 +38,13 @@ export function useCompanyVote(companyId: string, companySlug: string, baseVotes
     },
   })
 
-  if (liveEnabled) {
-    return {
-      voted: live?.voted ?? false,
-      count: live?.total ?? baseVotes,
-      toggle: () => mutation.mutate(),
-      isLive: true as const,
-    }
-  }
-
   return {
-    voted: localVoted,
-    count: localCount,
-    toggle: () => localVote('company', companyId, 1),
-    isLive: false as const,
+    voted: signedIn ? (live?.voted ?? false) : false,
+    count: signedIn ? (live?.total ?? baseVotes) : baseVotes,
+    toggle: () => {
+      if (!signedIn) return
+      mutation.mutate()
+    },
+    signedIn,
   }
 }
