@@ -350,6 +350,12 @@ export interface Database {
         Update: Partial<{ user_id: string; company_id: string; created_at: string }>
         Relationships: []
       }
+      deal_claims: {
+        Row: { id: string; deal_id: string; user_id: string; created_at: string }
+        Insert: { id?: string; deal_id: string; user_id: string; created_at?: string }
+        Update: Partial<{ deal_id: string; user_id: string; created_at: string }>
+        Relationships: []
+      }
       company_billing_profiles: {
         Row: {
           id: string
@@ -387,6 +393,10 @@ export interface Database {
           rating_2_count: number
           rating_1_count: number
         }
+        Relationships: []
+      }
+      deal_claim_counts: {
+        Row: { deal_id: string; claim_count: number }
         Relationships: []
       }
     }

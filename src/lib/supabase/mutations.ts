@@ -241,3 +241,16 @@ export async function unsaveCompany(userId: string, companyId: string): Promise<
   const { error } = await supabase.from('saved_companies').delete().eq('user_id', userId).eq('company_id', companyId)
   if (error) throw error
 }
+
+/**
+ * A claim is a permanent record, not a toggle — there is no unclaimDeal().
+ * 23505 is swallowed for the same reason as saveCompany: a stale cache
+ * race sending a duplicate claim isn't a real error, the end state the
+ * caller wanted (this deal is claimed) is already true. Whether the deal is
+ * still open and whether the caller manages the company are both enforced
+ * by the deal_claims RLS insert policy, not re-checked here.
+ */
+export async function claimDeal(userId: string, dealId: string): Promise<void> {
+  const { error } = await supabase.from('deal_claims').insert({ user_id: userId, deal_id: dealId })
+  if (error && error.code !== '23505') throw error
+}

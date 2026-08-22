@@ -1,9 +1,10 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Clock, Check } from 'lucide-react'
 import type { Deal, Company } from '@/mocks/types'
-import { useCategories } from '@/lib/supabase/hooks'
+import { useCategories, useMyCompanies } from '@/lib/supabase/hooks'
+import { useAuth } from '@/features/auth/useAuth'
+import { useMyClaimedDealIds, useClaimDeal } from '@/features/deals/useDealClaims'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { formatCompactNumber, cn } from '@/lib/utils'
@@ -13,11 +14,39 @@ function daysLeft(iso: string) {
   return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)))
 }
 
+function isExpired(iso: string) {
+  return new Date(iso).getTime() <= Date.now()
+}
+
 export function DealCard({ deal, company }: { deal: Deal; company: Company }) {
-  const [claimed, setClaimed] = useState(false)
+  const { user, isConfigured } = useAuth()
+  const signedIn = isConfigured && Boolean(user)
   const left = daysLeft(deal.expiresAt)
+  const expired = isExpired(deal.expiresAt)
+
   const { data: categories = [] } = useCategories()
   const category = categories.find((c) => company.categoryIds.includes(c.id))
+
+  const claimedIdsQuery = useMyClaimedDealIds()
+  const claimMutation = useClaimDeal()
+  const claimed = claimedIdsQuery.data?.includes(deal.id) ?? false
+
+  // Mirrors CompanyReviewsSection's self-review guard: proactively hides
+  // the claim action for a company's own members rather than letting them
+  // hit the RLS rejection this would otherwise produce — deal_claims'
+  // insert policy blocks this at the database level regardless.
+  const myCompaniesQuery = useMyCompanies()
+  const managesThisCompany = Boolean(myCompaniesQuery.data?.some((c) => c.id === company.id))
+
+  function handleClaim() {
+    if (!signedIn) {
+      toast.error('Sign in to claim this deal', { description: 'Sign in from the header, then come back to claim it.' })
+      return
+    }
+    claimMutation.mutate(deal.id, {
+      onSuccess: () => toast.success(`Deal claimed at ${company.name}`, { description: deal.title }),
+    })
+  }
 
   return (
     <div className="flex flex-col rounded-xl border border-border bg-surface p-4 transition-colors hover:border-organic/30">
@@ -42,26 +71,35 @@ export function DealCard({ deal, company }: { deal: Deal; company: Company }) {
           <Clock className="h-3.5 w-3.5" />
           {left > 0 ? `Ends in ${left}d` : 'Ends today'}
         </span>
-        <Button
-          size="sm"
-          variant={claimed ? 'secondary' : 'primary'}
-          disabled={claimed}
-          onClick={() => {
-            setClaimed(true)
-            toast.success(`Deal claimed at ${company.name}`, {
-              description: deal.title,
-            })
-          }}
-          className={cn(claimed && 'text-organic')}
-        >
-          {claimed ? (
-            <>
-              <Check className="h-3.5 w-3.5" /> Claimed
-            </>
-          ) : (
-            'Claim deal'
-          )}
-        </Button>
+        {expired ? (
+          <Button size="sm" variant="secondary" disabled>
+            Expired
+          </Button>
+        ) : managesThisCompany ? (
+          <Button size="sm" variant="secondary" disabled title="You manage this company">
+            Your deal
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant={claimed ? 'secondary' : 'primary'}
+            disabled={claimed || claimMutation.isPending}
+            onClick={handleClaim}
+            className={cn(claimed && 'text-organic')}
+          >
+            {claimed ? (
+              <>
+                <Check className="h-3.5 w-3.5" /> Claimed
+              </>
+            ) : claimMutation.isPending ? (
+              'Claiming…'
+            ) : signedIn ? (
+              'Claim deal'
+            ) : (
+              'Sign in to claim'
+            )}
+          </Button>
+        )}
       </div>
     </div>
   )

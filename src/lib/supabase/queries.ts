@@ -90,7 +90,8 @@ function toBattle(row: BattleRow, votesA: number, votesB: number): Battle {
   }
 }
 
-function toDeal(row: DealRow): Deal {
+/** claimCount = the seed baseline + real claims — same "baseline + count(real rows)" shape as toCompany's organicVotes. */
+function toDeal(row: DealRow, realClaimCount: number): Deal {
   return {
     id: row.id,
     type: 'deal',
@@ -99,7 +100,7 @@ function toDeal(row: DealRow): Deal {
     discountLabel: row.discount_label,
     expiresAt: row.expires_at,
     description: row.description,
-    claimCount: row.claim_count_baseline,
+    claimCount: row.claim_count_baseline + realClaimCount,
   }
 }
 
@@ -300,10 +301,19 @@ export async function getBattleById(id: string): Promise<Battle | null> {
 // Deals (8 rows total)
 // ---------------------------------------------------------------------------
 
+/** Reads deal_claim_counts (see *_deal_claims.sql) — a public aggregate view, never the private deal_claims rows themselves. */
+async function getDealClaimCounts(dealIds: string[]): Promise<Map<string, number>> {
+  if (dealIds.length === 0) return new Map()
+  const { data, error } = await supabase.from('deal_claim_counts').select('*').in('deal_id', dealIds)
+  if (error) throw error
+  return new Map(data.map((row) => [row.deal_id, row.claim_count]))
+}
+
 export async function getDeals(): Promise<Deal[]> {
   const { data, error } = await supabase.from('deals').select('*').order('expires_at')
   if (error) throw error
-  return data.map(toDeal)
+  const counts = await getDealClaimCounts(data.map((d) => d.id))
+  return data.map((row) => toDeal(row, counts.get(row.id) ?? 0))
 }
 
 // ---------------------------------------------------------------------------
@@ -467,6 +477,23 @@ export async function getSavedCompanyIds(userId: string): Promise<string[]> {
     .order('created_at', { ascending: false })
   if (error) throw error
   return data.map((row) => row.company_id)
+}
+
+// ---------------------------------------------------------------------------
+// Deal claims — IDs only, same reasoning as getSavedCompanyIds: the caller
+// combines these with the already-cached useDeals() list rather than a
+// second per-deal fetch.
+// ---------------------------------------------------------------------------
+
+/** Most-recently-claimed first — matches deal_claims_user_idx (user_id, created_at desc). */
+export async function getMyClaimedDealIds(userId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('deal_claims')
+    .select('deal_id')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data.map((row) => row.deal_id)
 }
 
 export async function getCompanyBillingProfile(companyId: string) {
