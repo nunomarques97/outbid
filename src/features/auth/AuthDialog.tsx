@@ -129,7 +129,7 @@ function AuthForm({
     setSubmitting(true)
     try {
       if (mode === 'signup') {
-        await signUp(email, password, displayName || undefined)
+        await signUp(email, password, displayName.trim())
         toast.success('Account created — check your email to confirm, if required.')
       } else {
         await signIn(email, password)
@@ -146,12 +146,17 @@ function AuthForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {mode === 'signup' && (
-        <Input
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-          placeholder="Display name"
-          autoComplete="name"
-        />
+        <div>
+          <Input
+            required
+            minLength={2}
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="Display name"
+            autoComplete="name"
+          />
+          <p className="mt-1 text-xs text-fg-subtle">Shown publicly on any reviews you write — use a nickname if you prefer.</p>
+        </div>
       )}
       <Input
         type="email"

@@ -31,7 +31,16 @@ export function useCompanyVote(companyId: string, companySlug: string, baseVotes
 
   const mutation = useMutation({
     mutationFn: () => toggleCompanyVote(live!.companyId, user!.id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey })
+      // organicVotes is also read from these separately-cached queries
+      // (the profile page's own "Organic votes" stat, leaderboards, search)
+      // — without this, voting updates VoteButton's own count but leaves
+      // every other rendering of the same number stale until a refresh.
+      queryClient.invalidateQueries({ queryKey: ['company', companySlug] })
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
+      queryClient.invalidateQueries({ queryKey: ['companiesByCategory'] })
+    },
   })
 
   if (liveEnabled) {
