@@ -24,3 +24,16 @@ export function useCreateCompany() {
 export function isUniqueViolation(err: unknown): boolean {
   return typeof err === 'object' && err !== null && 'code' in err && (err as { code?: unknown }).code === '23505'
 }
+
+/**
+ * True if the error is an RLS policy violation (42501) — for company
+ * creation specifically, this means "you already manage a company"
+ * (see companies' insert policy in 20260822080000_one_company_per_user.sql).
+ * CreateCompanyPage already hides the form entirely for a user who has a
+ * company, so this only matters for the race/direct-API-call case; it
+ * still deserves a clear, non-technical message rather than the raw
+ * Postgres error text.
+ */
+export function isRlsViolation(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && 'code' in err && (err as { code?: unknown }).code === '42501'
+}

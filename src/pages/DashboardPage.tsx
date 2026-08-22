@@ -5,13 +5,12 @@ import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Company } from '@/mocks/types'
 import { useAuth } from '@/features/auth/useAuth'
-import { useMyCompanies, useCategories, usePlacements, useActiveBids, useAllCompanies } from '@/lib/supabase/hooks'
+import { useMyCompany, useCategories, usePlacements, useActiveBids, useAllCompanies } from '@/lib/supabase/hooks'
 import { getPlacementDisplayName } from '@/lib/supabase/queries'
 import { usePlaceBid, useCreateBidPayment } from '@/features/dashboard/useDashboardBids'
 import { getBidSubmitDecision } from '@/lib/bidPayment'
-import { getRankedBids, isCompanyOutbid } from '@/lib/ranking'
+import { getMyPlacements, getAvailablePlacements } from '@/lib/ranking'
 import { CompanyAvatar } from '@/components/ui/avatar'
-import { CompanySwitcher } from '@/features/companies/CompanySwitcher'
 import { EditCompanyDialog } from '@/features/companies/EditCompanyDialog'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -25,9 +24,19 @@ import { BillingHistoryTab } from '@/features/dashboard/BillingHistoryTab'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 import { formatCurrency } from '@/lib/utils'
 
+/**
+ * Outbid v1 is one-company-per-user (enforced server-side — see
+ * company_members_user_id_unique in 20260822080000_one_company_per_user.sql).
+ * There is no company selection step: the dashboard loads the signed-in
+ * user's one company directly, or the "create your first company" state if
+ * they don't have one yet. No switcher, no selectedId, nothing to key a
+ * remount off of — the entire class of cross-company stale-render bug this
+ * replaced (Phase 31.1) is structurally impossible now, since there is
+ * never more than one company for this page to render.
+ */
 export function DashboardPage() {
   const { user, loading: authLoading } = useAuth()
-  const myCompaniesQuery = useMyCompanies()
+  const companyQuery = useMyCompany()
   useBidPaymentRedirectHandling()
 
   if (authLoading) return <LoadingState label="Loading your dashboard…" />
@@ -36,12 +45,12 @@ export function DashboardPage() {
   // isPending (not isLoading) deliberately: this query starts disabled until
   // `user` exists, so isLoading can read false for a render or two right as
   // it flips enabled — isPending stays accurate ("no data yet") regardless.
-  if (myCompaniesQuery.isPending) return <LoadingState label="Loading your dashboard…" />
-  if (myCompaniesQuery.isError) return <ErrorState message="Couldn't load your companies." />
+  if (companyQuery.isPending) return <LoadingState label="Loading your dashboard…" />
+  if (companyQuery.isError) return <ErrorState message="Couldn't load your company." />
 
-  if (myCompaniesQuery.data.length === 0) return <NoCompanyState />
+  if (!companyQuery.data) return <NoCompanyState />
 
-  return <DashboardWithCompanySelection companies={myCompaniesQuery.data} />
+  return <DashboardWithCompany company={companyQuery.data} />
 }
 
 /**
@@ -109,16 +118,7 @@ function NoCompanyState() {
   )
 }
 
-/**
- * Owns which of the signed-in user's companies is currently selected.
- * Supabase (via useMyCompanies) remains the source of truth for which
- * companies exist and what's on them — this only tracks a UI selection, and
- * defaults back to the first company whenever the previously-selected one is
- * no longer present (e.g. it was the very first render).
- */
-function DashboardWithCompanySelection({ companies }: { companies: Company[] }) {
-  const [selectedId, setSelectedId] = useState(companies[0].id)
-  const company = companies.find((c) => c.id === selectedId) ?? companies[0]
+function DashboardWithCompany({ company }: { company: Company }) {
   const [editOpen, setEditOpen] = useState(false)
 
   return (
@@ -137,23 +137,10 @@ function DashboardWithCompanySelection({ companies }: { companies: Company[] }) 
             <ExternalLink className="h-3.5 w-3.5" /> View public profile
           </Link>
         </div>
-        <div className="flex items-center gap-2">
-          <CompanySwitcher companies={companies} selectedId={company.id} onSelect={setSelectedId} />
-          <Link to="/dashboard/new" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-            <Plus className="h-3.5 w-3.5" /> New company
-          </Link>
-        </div>
       </div>
 
-      {/* key={company.id} forces a full remount on switch — without it, a
-          child like BidAdjustControl could keep stale local slider state
-          across companies if two companies happen to share a bid on the
-          same placement.id, since React would otherwise reuse the same
-          keyed list-item instance. Also resets EditCompanyDialog's pending
-          logo selection so a half-picked file can never carry over to a
-          different company after switching. */}
-      <DashboardContent key={company.id} company={company} />
-      <EditCompanyDialog key={company.id} company={company} open={editOpen} onOpenChange={setEditOpen} />
+      <DashboardContent company={company} />
+      <EditCompanyDialog company={company} open={editOpen} onOpenChange={setEditOpen} />
     </div>
   )
 }
@@ -189,30 +176,13 @@ function DashboardContent({ company }: { company: Company }) {
   const bids = bidsQuery.data ?? []
   const allCompanies = allCompaniesQuery.data ?? []
 
-  const myPlacements = placements
-    .map((placement) => {
-      const ranked = getRankedBids(bids, placement.id)
-      const myBid = ranked.find((b) => b.companyId === company.id)
-      if (!myBid) return null
-      const outbid = isCompanyOutbid(bids, placement.id, company.id)
-      const leader = ranked[0]
-      return { placement, myBid, ranked, outbid, leader }
-    })
-    .filter((p): p is NonNullable<typeof p> => Boolean(p))
-
+  // Both pure functions of (bids, placements, company.id) — see
+  // getMyPlacements' own doc comment for why this is deliberately not
+  // memoized against the previous company's result: a switch must always
+  // recompute from scratch, never carry over a stale derived value.
+  const myPlacements = getMyPlacements(bids, placements, company.id)
   const outbidPlacements = myPlacements.filter((p) => p.outbid)
-
-  // Placements this company isn't bidding on at all yet — everything else
-  // is already derived from placements/bids already fetched above, so this
-  // needs no additional query.
-  const myPlacementIds = new Set(myPlacements.map((p) => p.placement.id))
-  const availablePlacements = placements
-    .filter((placement) => !myPlacementIds.has(placement.id))
-    .map((placement) => {
-      const ranked = getRankedBids(bids, placement.id)
-      const leader = ranked[0] as (typeof ranked)[number] | undefined
-      return { placement, ranked, leader }
-    })
+  const availablePlacements = getAvailablePlacements(bids, placements, company.id)
 
   // currentAmount is null for a placement this company isn't bidding on
   // yet (StartBidCard) — see getBidSubmitDecision for why that also means

@@ -6,7 +6,7 @@ import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { LogoPicker } from './LogoPicker'
 import { deriveSlug, deriveInitials, cn } from '@/lib/utils'
-import { useCreateCompany, isUniqueViolation } from './useCreateCompany'
+import { useCreateCompany, isUniqueViolation, isRlsViolation } from './useCreateCompany'
 import { useUploadCompanyLogo } from './useCompanyLogo'
 import { useSetCompanyCategory } from './useCompanyCategory'
 import { useCategories } from '@/lib/supabase/hooks'
@@ -131,6 +131,8 @@ export function CreateCompanyForm() {
     } catch (err) {
       if (isUniqueViolation(err)) {
         setErrors((prev) => ({ ...prev, name: 'That name is already taken on Outbid — try a different one.' }))
+      } else if (isRlsViolation(err)) {
+        toast.error('You already manage a company — Outbid supports one company per account.')
       } else {
         toast.error(err instanceof Error ? err.message : 'Could not create the company. Please try again.')
       }
