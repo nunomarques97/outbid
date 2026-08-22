@@ -224,14 +224,24 @@ function DashboardContent({ company }: { company: Company }) {
       return
     }
 
+    // Advisory only — place_bid() rejects this exact case server-side too
+    // (see supabase/migrations/20260822050000_reject_bid_lowering.sql), so
+    // this early return is purely to skip a request that would fail
+    // anyway. BidAdjustControl already disables its own submit button for
+    // this case; this exists for any other caller of handlePlaceBid.
+    if (decision.action === 'rejected_lowering') {
+      toast.error('Your bid cannot be lowered. Withdraw the bid if you want to leave this placement.')
+      return
+    }
+
     setPending({ placementId, action: 'bid' })
 
-    if (decision.action === 'free') {
+    if (decision.action === 'free_same') {
       placeBidMutation.mutate(
         { companyId: company.id, placementId, amount },
         {
           onSuccess: () => {
-            toast.success(`Your bid on ${name} is now ${formatCurrency(amount)}`)
+            toast.success(`Your bid on ${name} stays at ${formatCurrency(amount)}`)
             setPending(null)
           },
           onError: (err) => {

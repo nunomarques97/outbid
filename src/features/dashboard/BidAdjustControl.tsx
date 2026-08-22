@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Slider } from '@/components/ui/slider'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
+import { getBidSubmitDecision } from '@/lib/bidPayment'
 
 interface BidAdjustControlProps {
   currentAmount: number
@@ -13,9 +14,13 @@ interface BidAdjustControlProps {
 }
 
 /**
- * Purely presentational — no bidding logic lives here. The caller decides
- * what "submit"/"withdraw" actually do (DashboardPage wires these to the
- * real place_bid/withdraw_bid RPCs via useDashboardBids).
+ * Purely presentational — no bidding logic lives here beyond reusing
+ * getBidSubmitDecision (the same pure helper DashboardPage uses) to decide
+ * what to show and whether to allow submitting. The caller decides what
+ * "submit"/"withdraw" actually do (DashboardPage wires these to the real
+ * place_bid/create-bid-payment/withdraw_bid paths via useDashboardBids).
+ * The server independently re-enforces this same rule — see
+ * place_bid()'s own rejection of a lowered amount — this is UX only.
  */
 export function BidAdjustControl({
   currentAmount,
@@ -29,6 +34,16 @@ export function BidAdjustControl({
   const [value, setValue] = useState(currentAmount)
 
   const willTakeLead = value > leaderAmount
+  const decision = getBidSubmitDecision({ targetAmount: value, currentActiveAmount: currentAmount })
+  const isLowering = decision.action === 'rejected_lowering'
+
+  const buttonLabel = submitting
+    ? 'Updating…'
+    : decision.action === 'paid_raise'
+      ? `Raise bid — pay ${formatCurrency(decision.chargeAmount)}`
+      : decision.action === 'rejected_lowering'
+        ? "Bids can't be lowered"
+        : 'Keep bid'
 
   return (
     <div className="rounded-lg border border-border bg-surface-raised p-4">
@@ -51,14 +66,19 @@ export function BidAdjustControl({
           {willTakeLead ? 'Takes the lead' : 'Still behind'}
         </span>
       </div>
+      {isLowering && (
+        <p className="mt-2 text-xs text-danger">
+          Bids can't be lowered — withdraw below if you want to reduce or leave this placement.
+        </p>
+      )}
       <Button
         size="sm"
         className="mt-3 w-full"
         variant={willTakeLead ? 'sponsored' : 'secondary'}
-        disabled={submitting}
+        disabled={submitting || isLowering}
         onClick={() => onSubmit(value)}
       >
-        {submitting ? 'Updating…' : 'Update bid'}
+        {buttonLabel}
       </Button>
       {onWithdraw && (
         <button

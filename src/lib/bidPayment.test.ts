@@ -4,35 +4,42 @@ import { getBidSubmitDecision } from './bidPayment'
 describe('getBidSubmitDecision', () => {
   it('charges the full amount for a brand new bid (no active bid, current treated as 0)', () => {
     expect(getBidSubmitDecision({ targetAmount: 10, currentActiveAmount: null })).toEqual({
-      action: 'paid',
+      action: 'paid_raise',
       chargeAmount: 10,
     })
   })
 
   it('raising 10 -> 20 is paid, but only charges the 10 delta, not the full new amount', () => {
     expect(getBidSubmitDecision({ targetAmount: 20, currentActiveAmount: 10 })).toEqual({
-      action: 'paid',
+      action: 'paid_raise',
       chargeAmount: 10,
     })
   })
 
-  it('raising 10 -> 15 is paid, charging only the 5 delta', () => {
-    expect(getBidSubmitDecision({ targetAmount: 15, currentActiveAmount: 10 })).toEqual({
-      action: 'paid',
+  it('raising 20 -> 25 is paid, charging only the 5 delta', () => {
+    expect(getBidSubmitDecision({ targetAmount: 25, currentActiveAmount: 20 })).toEqual({
+      action: 'paid_raise',
       chargeAmount: 5,
     })
   })
 
-  it('resubmitting the same amount is free', () => {
+  it('resubmitting the same amount is free, not a raise', () => {
     expect(getBidSubmitDecision({ targetAmount: 20, currentActiveAmount: 20 })).toEqual({
-      action: 'free',
+      action: 'free_same',
       chargeAmount: 0,
     })
   })
 
-  it('lowering is free, with no refund/credit implied', () => {
+  it('rejects lowering 20 -> 15 — never "free"', () => {
     expect(getBidSubmitDecision({ targetAmount: 15, currentActiveAmount: 20 })).toEqual({
-      action: 'free',
+      action: 'rejected_lowering',
+      chargeAmount: 0,
+    })
+  })
+
+  it('rejects lowering 20 -> 10 — never "free"', () => {
+    expect(getBidSubmitDecision({ targetAmount: 10, currentActiveAmount: 20 })).toEqual({
+      action: 'rejected_lowering',
       chargeAmount: 0,
     })
   })
