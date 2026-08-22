@@ -19,6 +19,7 @@ type TrendRow = Database['public']['Tables']['trends']['Row']
 type NotificationRow = Database['public']['Tables']['notifications']['Row']
 type ReviewRow = Database['public']['Tables']['reviews']['Row']
 type CompanyRatingSummaryRow = Database['public']['Views']['company_rating_summary']['Row']
+type BidPaymentRow = Database['public']['Tables']['bid_payments']['Row']
 
 // ---------------------------------------------------------------------------
 // Row -> domain type adapters
@@ -671,4 +672,47 @@ export async function getMyDisplayName(userId: string): Promise<string> {
   const { data, error } = await supabase.from('profiles').select('display_name').eq('id', userId).single()
   if (error) throw error
   return data.display_name
+}
+
+// ---------------------------------------------------------------------------
+// Bid payments — read-only history of one-time Stripe payments. No mock
+// counterpart (same reasoning as Review/Notification above): this is a
+// purely Supabase-era concept. Rows are never written from the frontend —
+// see supabase/functions/create-bid-payment and stripe-webhook — this is
+// display only.
+// ---------------------------------------------------------------------------
+
+export interface BidPayment {
+  id: string
+  placementId: string
+  /** Actual EUR amount charged — the delta above the prior bid, or the full amount for a brand-new bid. */
+  amount: number
+  /** The bid amount this payment established (or will establish) — not what was charged. */
+  targetBidAmount: number
+  currency: string
+  status: BidPaymentRow['status']
+  createdAt: string
+}
+
+function toBidPayment(row: BidPaymentRow): BidPayment {
+  return {
+    id: row.id,
+    placementId: row.placement_id,
+    amount: row.amount,
+    targetBidAmount: row.target_bid_amount,
+    currency: row.currency,
+    status: row.status,
+    createdAt: row.created_at,
+  }
+}
+
+/** Newest first — matches the bid_payments_company_idx (company_id, created_at desc) index. */
+export async function getBidPaymentsForCompany(companyId: string): Promise<BidPayment[]> {
+  const { data, error } = await supabase
+    .from('bid_payments')
+    .select('*')
+    .eq('company_id', companyId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data.map(toBidPayment)
 }

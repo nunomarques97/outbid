@@ -13,6 +13,7 @@ import {
   getDeals,
   getTrends,
   getAllCompanyRatingSummaries,
+  getBidPaymentsForCompany,
 } from './queries'
 
 /**
@@ -106,4 +107,19 @@ export function useTrends() {
  */
 export function useAllCompanyRatingSummaries() {
   return useQuery({ queryKey: ['ratingSummaries'], queryFn: getAllCompanyRatingSummaries, staleTime: STALE_TIME })
+}
+
+/**
+ * A company's own Stripe bid-payment history (dashboard Billing tab only —
+ * RLS already restricts this to companies the caller manages, same as
+ * every other write-scoped read here). Disabled with no request until a
+ * companyId is known, same gating pattern as useMyCompanies.
+ */
+export function useBidPayments(companyId: string | undefined) {
+  return useQuery({
+    queryKey: ['bidPayments', companyId],
+    queryFn: () => getBidPaymentsForCompany(companyId!),
+    staleTime: STALE_TIME,
+    enabled: Boolean(companyId),
+  })
 }

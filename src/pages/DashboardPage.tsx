@@ -21,6 +21,7 @@ import { CompetitorBidTable } from '@/features/dashboard/CompetitorBidTable'
 import { BidAdjustControl } from '@/features/dashboard/BidAdjustControl'
 import { StartBidCard } from '@/features/dashboard/StartBidCard'
 import { CompanyDealsTab } from '@/features/dashboard/CompanyDealsTab'
+import { BillingHistoryTab } from '@/features/dashboard/BillingHistoryTab'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 import { formatCurrency } from '@/lib/utils'
 
@@ -63,6 +64,10 @@ function useBidPaymentRedirectHandling() {
     if (status === 'success') {
       toast.success('Payment received — confirming your bid, this may take a few seconds.')
       queryClient.invalidateQueries({ queryKey: ['activeBids'] })
+      // Not scoped to one companyId: cheap, infrequent (once per redirect
+      // back from Checkout), and this hook doesn't otherwise know which
+      // company the payment was for.
+      queryClient.invalidateQueries({ queryKey: ['bidPayments'] })
     } else if (status === 'cancelled') {
       toast('Payment cancelled — your bid was not changed.')
     }
@@ -410,13 +415,7 @@ function DashboardContent({ company }: { company: Company }) {
       </TabsContent>
 
       <TabsContent value="billing" className="mt-6">
-        <div className="rounded-2xl border border-dashed border-border bg-surface/60 p-8 text-center">
-          <p className="font-semibold text-fg">Billing is coming soon</p>
-          <p className="mx-auto mt-1.5 max-w-md text-sm text-fg-muted">
-            Invoices and spend history will appear here once payments are set up. Bidding and deals are unaffected —
-            there's nothing to pay yet.
-          </p>
-        </div>
+        <BillingHistoryTab companyId={company.id} />
       </TabsContent>
     </Tabs>
   )
