@@ -5,7 +5,9 @@ import type { Deal, Company } from '@/mocks/types'
 import { useCategories, useMyCompanies } from '@/lib/supabase/hooks'
 import { useAuth } from '@/features/auth/useAuth'
 import { useMyClaimedDealIds, useClaimDeal } from '@/features/deals/useDealClaims'
+import { getDealCtaState } from '@/lib/dealState'
 import { CompanyAvatar } from '@/components/ui/avatar'
+import { CompanyWebsiteLink } from '@/components/shared/CompanyWebsiteLink'
 import { Button } from '@/components/ui/button'
 import { formatCompactNumber, cn } from '@/lib/utils'
 
@@ -38,6 +40,8 @@ export function DealCard({ deal, company }: { deal: Deal; company: Company }) {
   const myCompaniesQuery = useMyCompanies()
   const managesThisCompany = Boolean(myCompaniesQuery.data?.some((c) => c.id === company.id))
 
+  const ctaState = getDealCtaState({ expired, signedIn, managesCompany: managesThisCompany, claimed })
+
   function handleClaim() {
     if (!signedIn) {
       toast.error('Sign in to claim this deal', { description: 'Sign in from the header, then come back to claim it.' })
@@ -49,7 +53,12 @@ export function DealCard({ deal, company }: { deal: Deal; company: Company }) {
   }
 
   return (
-    <div className="flex flex-col rounded-xl border border-border bg-surface p-4 transition-colors hover:border-organic/30">
+    <div
+      className={cn(
+        'flex flex-col rounded-xl border bg-surface p-4 transition-colors hover:border-organic/30',
+        ctaState === 'claimed' ? 'border-organic/30' : 'border-border',
+      )}
+    >
       <div className="mb-3 flex items-center gap-3">
         <Link to={`/companies/${company.slug}`} className="flex min-w-0 items-center gap-3 hover:opacity-90">
           <CompanyAvatar initials={company.initials} color={company.logoColor} logoUrl={company.logoUrl} />
@@ -66,40 +75,48 @@ export function DealCard({ deal, company }: { deal: Deal; company: Company }) {
       </div>
       <p className="font-semibold leading-snug text-fg">{deal.title}</p>
       <p className="mt-1.5 flex-1 text-sm text-fg-muted">{deal.description}</p>
-      <div className="mt-4 flex items-center justify-between gap-3">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <span className="flex items-center gap-1 text-xs text-fg-subtle">
           <Clock className="h-3.5 w-3.5" />
           {expired ? 'Expired' : left > 0 ? `Ends in ${left}d` : 'Ends today'}
         </span>
-        {expired ? (
-          <Button size="sm" variant="secondary" disabled>
-            Expired
-          </Button>
-        ) : managesThisCompany ? (
-          <Button size="sm" variant="secondary" disabled title="You manage this company">
-            Your deal
-          </Button>
-        ) : (
-          <Button
-            size="sm"
-            variant={claimed ? 'secondary' : 'primary'}
-            disabled={claimed || claimMutation.isPending}
-            onClick={handleClaim}
-            className={cn(claimed && 'text-organic')}
-          >
-            {claimed ? (
-              <>
-                <Check className="h-3.5 w-3.5" /> Claimed
-              </>
-            ) : claimMutation.isPending ? (
-              'Claiming…'
-            ) : signedIn ? (
-              'Claim deal'
-            ) : (
-              'Sign in to claim'
-            )}
-          </Button>
-        )}
+
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+          {/* The destination is just the company's public website — the
+              same information CompanyProfilePage already links out to —
+              so it's available regardless of claim/auth state, not gated
+              behind claiming. Claiming is a separate "I'm interested"
+              signal, not an unlock. */}
+          <CompanyWebsiteLink website={company.website} size="sm">
+            Website
+          </CompanyWebsiteLink>
+
+          {ctaState === 'expired' && (
+            <Button size="sm" variant="secondary" disabled>
+              Expired
+            </Button>
+          )}
+          {ctaState === 'own' && (
+            <Button size="sm" variant="secondary" disabled title="You manage this company">
+              Your deal
+            </Button>
+          )}
+          {ctaState === 'claimed' && (
+            <Button size="sm" variant="secondary" disabled className="text-organic">
+              <Check className="h-3.5 w-3.5" /> Claimed
+            </Button>
+          )}
+          {ctaState === 'signedOut' && (
+            <Button size="sm" variant="primary" onClick={handleClaim}>
+              Sign in to claim
+            </Button>
+          )}
+          {ctaState === 'claimable' && (
+            <Button size="sm" variant="primary" disabled={claimMutation.isPending} onClick={handleClaim}>
+              {claimMutation.isPending ? 'Claiming…' : 'Claim deal'}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   )

@@ -610,6 +610,25 @@ export async function getMyReviewForCompany(companyId: string, userId: string): 
   return data ? toReview(data) : null
 }
 
+/**
+ * Every review this user has ever written, across every company, newest
+ * first — used by /saved's "Your reviews" section, the only place a
+ * customer can find their own review activity without knowing which
+ * company profile to revisit. reviews is fully public-read, so no RLS gap
+ * here; no dedicated user_id index exists (only reviews_company_idx), but
+ * the table is small enough at this stage that it doesn't need one — same
+ * reasoning already applied throughout this project's smaller tables.
+ */
+export async function getReviewsByUser(userId: string): Promise<Review[]> {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data.map(toReview)
+}
+
 /** A company with zero reviews has no row in the view at all — treated as a real, valid "no reviews yet" result, not an error. */
 export async function getCompanyRatingSummary(companyId: string): Promise<CompanyRatingSummary> {
   const { data, error } = await supabase

@@ -4,6 +4,8 @@ import { useAuth } from '@/features/auth/useAuth'
 import { useAllCompanies, useCategories, useAllCompanyRatingSummaries, useDeals } from '@/lib/supabase/hooks'
 import { useSavedCompanyIds } from '@/features/saved/useSavedCompanies'
 import { useMyClaimedDealIds } from '@/features/deals/useDealClaims'
+import { useMyReviews } from '@/features/reviews/useReviews'
+import { MyReviewsSection } from '@/features/reviews/MyReviewsSection'
 import { OrganicEntryCard } from '@/components/leaderboard/OrganicEntryCard'
 import { DealCard } from '@/components/shared/DealCard'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
@@ -31,8 +33,10 @@ function SignedOutState() {
 }
 
 function SavedContent() {
+  const { user } = useAuth()
   const savedIdsQuery = useSavedCompanyIds()
   const claimedDealIdsQuery = useMyClaimedDealIds()
+  const myReviewsQuery = useMyReviews()
   const companiesQuery = useAllCompanies()
   const categoriesQuery = useCategories()
   const dealsQuery = useDeals()
@@ -40,24 +44,31 @@ function SavedContent() {
   // other discovery surface that shows ratings alongside company cards.
   const ratingSummariesQuery = useAllCompanyRatingSummaries()
 
-  // isPending (not isLoading) for the two per-user queries specifically:
-  // they start disabled until `user` resolves, so isLoading can read false
-  // for a render or two right as they flip enabled.
+  // isPending (not isLoading) for the per-user queries specifically: they
+  // start disabled until `user` resolves, so isLoading can read false for a
+  // render or two right as they flip enabled.
   const loading =
     savedIdsQuery.isPending ||
     claimedDealIdsQuery.isPending ||
+    myReviewsQuery.isPending ||
     companiesQuery.isLoading ||
     categoriesQuery.isLoading ||
     dealsQuery.isLoading
   const errored =
-    savedIdsQuery.isError || claimedDealIdsQuery.isError || companiesQuery.isError || categoriesQuery.isError || dealsQuery.isError
+    savedIdsQuery.isError ||
+    claimedDealIdsQuery.isError ||
+    myReviewsQuery.isError ||
+    companiesQuery.isError ||
+    categoriesQuery.isError ||
+    dealsQuery.isError
 
   if (loading) return <LoadingState label="Loading what you've saved…" />
-  if (errored) return <ErrorState message="Couldn't load your saved companies and deals." />
+  if (errored) return <ErrorState message="Couldn't load your activity." />
 
   const companies = companiesQuery.data ?? []
   const categories = categoriesQuery.data ?? []
   const deals = dealsQuery.data ?? []
+  const myReviews = myReviewsQuery.data ?? []
 
   // Preserves the "most recent first" order the underlying queries already
   // return — neither company nor deal data needs to know about save/claim
@@ -70,7 +81,7 @@ function SavedContent() {
     .map((id) => deals.find((d) => d.id === id))
     .filter((d): d is NonNullable<typeof d> => Boolean(d))
 
-  if (savedCompanies.length === 0 && claimedDeals.length === 0) {
+  if (savedCompanies.length === 0 && claimedDeals.length === 0 && myReviews.length === 0) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
         <h1 className="text-3xl font-bold tracking-tight text-fg sm:text-4xl">Saved</h1>
@@ -82,7 +93,7 @@ function SavedContent() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
       <h1 className="text-3xl font-bold tracking-tight text-fg sm:text-4xl">Saved</h1>
-      <p className="mt-2 text-fg-muted">Companies and deals you've bookmarked, in one place.</p>
+      <p className="mt-2 text-fg-muted">Companies, deals, and reviews you've engaged with, in one place.</p>
 
       {savedCompanies.length > 0 && (
         <div className="mt-8">
@@ -112,6 +123,13 @@ function SavedContent() {
           </div>
         </div>
       )}
+
+      {myReviews.length > 0 && user && (
+        <div className="mt-10">
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-widest text-fg-muted">Your reviews</h2>
+          <MyReviewsSection userId={user.id} reviews={myReviews} companies={companies} />
+        </div>
+      )}
     </div>
   )
 }
@@ -120,10 +138,10 @@ function EmptyState() {
   return (
     <div className="mt-10 flex flex-col items-center rounded-xl border border-border bg-surface p-10 text-center">
       <Bookmark className="h-8 w-8 text-fg-subtle" />
-      <p className="mt-4 font-semibold text-fg">Nothing saved yet</p>
+      <p className="mt-4 font-semibold text-fg">Nothing here yet</p>
       <p className="mt-1 max-w-sm text-sm text-fg-muted">
-        Save companies you want to come back to, or claim a deal — tap the bookmark icon on any profile, or "Claim
-        deal" on any offer.
+        Save companies, claim deals, or write a review — tap the bookmark icon on any profile, "Claim deal" on any
+        offer, or leave a review from a company's page.
       </p>
       <div className="mt-6 flex flex-wrap justify-center gap-3">
         <Link to="/categories" className={buttonVariants({})}>

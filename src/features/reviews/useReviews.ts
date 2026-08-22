@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/useAuth'
-import { getReviewsForCompany, getMyReviewForCompany, getCompanyRatingSummary } from '@/lib/supabase/queries'
+import { getReviewsForCompany, getMyReviewForCompany, getReviewsByUser, getCompanyRatingSummary } from '@/lib/supabase/queries'
 import { createReview, updateReview, deleteReview } from '@/lib/supabase/mutations'
 
 const STALE_TIME = 30_000
@@ -33,9 +33,21 @@ export function useCompanyRatingSummary(companyId: string) {
   })
 }
 
-/** Every review mutation invalidates the same three query families — centralized here so create/edit/delete can't drift out of sync with each other. */
+/** Every review the signed-in user has written, across every company — powers /saved's "Your reviews" section. */
+export function useMyReviews() {
+  const { user, isConfigured } = useAuth()
+  return useQuery({
+    queryKey: ['myReviews', user?.id],
+    queryFn: () => getReviewsByUser(user!.id),
+    staleTime: STALE_TIME,
+    enabled: isConfigured && Boolean(user),
+  })
+}
+
+/** Every review mutation invalidates the same query families — centralized here so create/edit/delete can't drift out of sync with each other. */
 function useInvalidateReviewQueries() {
   const queryClient = useQueryClient()
+  const { user } = useAuth()
   return (companyId: string) => {
     queryClient.invalidateQueries({ queryKey: ['reviews', companyId] })
     queryClient.invalidateQueries({ queryKey: ['myReview', companyId] })
@@ -43,6 +55,7 @@ function useInvalidateReviewQueries() {
     // Broad discovery-surface cache (search, leaderboards) — one company's
     // new review shouldn't require a hard refresh to show up there too.
     queryClient.invalidateQueries({ queryKey: ['ratingSummaries'] })
+    queryClient.invalidateQueries({ queryKey: ['myReviews', user?.id] })
   }
 }
 

@@ -1,5 +1,5 @@
 import { useParams, Link, Navigate } from 'react-router-dom'
-import { Globe, Calendar, ArrowRight, ArrowUpRight, Swords, Trophy } from 'lucide-react'
+import { Globe, Calendar, ArrowRight, Swords, Trophy } from 'lucide-react'
 import type { Company } from '@/mocks/types'
 import {
   useCompany,
@@ -18,6 +18,7 @@ import { VoteButton } from '@/components/shared/VoteButton'
 import { SaveButton } from '@/components/shared/SaveButton'
 import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
 import { DealCard } from '@/components/shared/DealCard'
+import { CompanyWebsiteLink } from '@/components/shared/CompanyWebsiteLink'
 import { OrganicEntryCard } from '@/components/leaderboard/OrganicEntryCard'
 import { CompanyRatingBadge } from '@/features/reviews/CompanyRatingBadge'
 import { CompanyReviewsSection } from '@/features/reviews/CompanyReviewsSection'
@@ -124,14 +125,7 @@ function CompanyProfileContent({ company }: { company: Company }) {
             ))}
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <a
-              href={`https://${company.website}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={buttonVariants({ variant: 'secondary', size: 'sm' })}
-            >
-              Visit website <ArrowUpRight className="h-3.5 w-3.5" />
-            </a>
+            <CompanyWebsiteLink website={company.website} />
             {relatedBattles[0] && (
               <Link
                 to={`/battles/${relatedBattles[0].id}`}
