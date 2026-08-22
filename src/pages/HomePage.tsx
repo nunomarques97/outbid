@@ -13,8 +13,8 @@ export function HomePage() {
   return (
     <>
       <Hero />
-      <TopBiddersSection />
       <CreateCompanyCta />
+      <TopBiddersSection />
       <HowItWorks />
       <SponsoredMechanicShowcase />
       <RankingsPreview />

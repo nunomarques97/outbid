@@ -6,6 +6,7 @@ import {
   getGlobalBidStatus,
   getTopBidders,
   getTopCategoriesByBidTotal,
+  splitTopBiddersForHomepage,
 } from './ranking'
 import type { Bid, Category, Company } from '@/mocks/types'
 
@@ -250,6 +251,43 @@ describe('getTopBidders (one company = one global bid)', () => {
 
   it('excludes companies with no active bid — nobody appears as sponsored without one', () => {
     expect(getTopBidders(companies, [], GLOBAL)).toEqual([])
+  })
+})
+
+describe('splitTopBiddersForHomepage', () => {
+  function makeEntries(count: number): ReturnType<typeof getTopBidders> {
+    const companies = Array.from({ length: count }, (_, i) => makeCompany({ id: `co-${i}` }))
+    const bids = companies.map((c, i) => makeBid({ id: `b-${i}`, companyId: c.id, amount: count - i }))
+    return getTopBidders(companies, bids, GLOBAL)
+  }
+
+  it('shows the top 5 as the primary tier when there are more than 10 bidders', () => {
+    const { primary } = splitTopBiddersForHomepage(makeEntries(12), 5, 5)
+    expect(primary).toHaveLength(5)
+    expect(primary.map((e) => e.company.id)).toEqual(['co-0', 'co-1', 'co-2', 'co-3', 'co-4'])
+  })
+
+  it('puts the next 5 (ranks 6-10) in the secondary "more" tier', () => {
+    const { more } = splitTopBiddersForHomepage(makeEntries(12), 5, 5)
+    expect(more).toHaveLength(5)
+    expect(more.map((e) => e.company.id)).toEqual(['co-5', 'co-6', 'co-7', 'co-8', 'co-9'])
+  })
+
+  it('never shows more than primaryCount + moreCount, even with far more bidders', () => {
+    const { primary, more } = splitTopBiddersForHomepage(makeEntries(50), 5, 5)
+    expect(primary.length + more.length).toBe(10)
+  })
+
+  it('the "more" tier is empty when there are 5 or fewer bidders total', () => {
+    const { primary, more } = splitTopBiddersForHomepage(makeEntries(3), 5, 5)
+    expect(primary).toHaveLength(3)
+    expect(more).toEqual([])
+  })
+
+  it('the "more" tier only holds what remains when there are between 6 and 10 bidders', () => {
+    const { primary, more } = splitTopBiddersForHomepage(makeEntries(7), 5, 5)
+    expect(primary).toHaveLength(5)
+    expect(more).toHaveLength(2)
   })
 })
 

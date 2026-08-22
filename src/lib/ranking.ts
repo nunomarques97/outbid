@@ -152,6 +152,29 @@ export function getTopBidders(
     .filter((e): e is TopBidderEntry => Boolean(e.company))
 }
 
+export interface HomepageTopBidders {
+  primary: TopBidderEntry[]
+  more: TopBidderEntry[]
+}
+
+/**
+ * Splits a full, already-ranked Top Bidders list into the homepage's two
+ * tiers — the top `primaryCount` shown prominently, the next `moreCount`
+ * for the secondary "More bidders" carousel. The homepage never shows
+ * more than primaryCount + moreCount entries; /top-bidders (unsliced
+ * getTopBidders) is the real full list (see Phase 34.1).
+ */
+export function splitTopBiddersForHomepage(
+  entries: TopBidderEntry[],
+  primaryCount: number,
+  moreCount: number,
+): HomepageTopBidders {
+  return {
+    primary: entries.slice(0, primaryCount),
+    more: entries.slice(primaryCount, primaryCount + moreCount),
+  }
+}
+
 export interface CategoryBidTotal {
   category: Category
   total: number

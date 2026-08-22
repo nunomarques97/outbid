@@ -147,7 +147,7 @@ export function CreateCompanyForm() {
       } else if (isRlsViolation(err)) {
         toast.error('You already manage a company — Repcastr supports one company per account.')
       } else if (isCategoryLimitViolation(err)) {
-        toast.error(`Choose at most ${MAX_COMPANY_CATEGORIES} categories.`)
+        toast.error(err instanceof Error ? err.message : `Choose 1–${MAX_COMPANY_CATEGORIES} categories.`)
       } else {
         toast.error(err instanceof Error ? err.message : 'Could not create the company. Please try again.')
       }

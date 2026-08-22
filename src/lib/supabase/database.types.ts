@@ -487,6 +487,10 @@ export interface Database {
         Args: { p_company_id: string; p_roles?: CompanyRole[] }
         Returns: boolean
       }
+      set_company_categories: {
+        Args: { p_company_id: string; p_category_ids: string[] }
+        Returns: undefined
+      }
     }
     Enums: Record<string, never>
   }

@@ -37,7 +37,7 @@ export function CreateCompanyCta() {
           <Building2 className="h-5 w-5 shrink-0 text-brand" />
           <div>
             <p className="font-semibold text-fg">Have a company?</p>
-            <p className="mt-0.5 text-sm text-fg-muted">Set up your public profile and start competing for visibility.</p>
+            <p className="mt-0.5 text-sm text-fg-muted">Create your company profile and start competing for visibility.</p>
           </div>
         </div>
         <Button type="button" onClick={handleClick} className="w-full shrink-0 sm:w-auto">

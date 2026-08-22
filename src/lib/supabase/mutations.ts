@@ -133,23 +133,21 @@ export async function createCompany(input: {
 }
 
 /**
- * Replaces a company's category assignments (delete-then-insert, since the
- * row's primary key IS (company_id, category_id) — there's no in-place
- * update). Used by both creation (no existing rows, delete is a no-op) and
- * editing (actually replaces). A company may hold 1–MAX_COMPANY_CATEGORIES
- * categories; the max is also enforced by a database trigger
- * (company_categories_enforce_limit, see
- * 20260822090000_category_architecture_v1.sql) so it holds even if this
- * client-side check is bypassed.
+ * Replaces a company's category assignments via the set_company_categories
+ * RPC (see 20260822110000_category_min_max_deferred.sql) rather than a raw
+ * delete-then-insert: both the add and the remove now land in the same
+ * transaction, so the database's deferred min-1/max-2 constraint triggers
+ * only ever see the final result — never the momentarily-empty state a
+ * two-request delete-then-insert would otherwise pass through. Both bounds
+ * are enforced server-side this way, holding even if this client-side
+ * check (validateCategorySelection) is bypassed.
  */
 export async function setCompanyCategories(companyId: string, categoryIds: string[]): Promise<void> {
-  const { error: deleteError } = await supabase.from('company_categories').delete().eq('company_id', companyId)
-  if (deleteError) throw deleteError
-  if (categoryIds.length === 0) return
-  const { error: insertError } = await supabase
-    .from('company_categories')
-    .insert(categoryIds.map((categoryId) => ({ company_id: companyId, category_id: categoryId })))
-  if (insertError) throw insertError
+  const { error } = await supabase.rpc('set_company_categories', {
+    p_company_id: companyId,
+    p_category_ids: categoryIds,
+  })
+  if (error) throw error
 }
 
 export const LOGO_MAX_BYTES = 2 * 1024 * 1024 // 2MB
