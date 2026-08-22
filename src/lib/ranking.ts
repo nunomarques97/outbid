@@ -69,3 +69,57 @@ export function getOrganicRanking(companies: Company[], bids: Bid[], placement: 
     .map((c) => ({ company: c, votes: c.organicVotes }))
     .sort((a, b) => b.votes - a.votes)
 }
+
+export interface MyPlacementEntry {
+  placement: Placement
+  myBid: RankedBid
+  ranked: RankedBid[]
+  outbid: boolean
+  leader: RankedBid
+}
+
+/**
+ * The advertiser dashboard's "placements this company is bidding on."
+ * Pure and stateless — takes companyId as a plain argument rather than
+ * reading it from any component/session state, specifically so switching
+ * companies can never leak a previous company's placements: calling this
+ * again with a different companyId against the exact same bids/placements
+ * arrays is guaranteed (not just expected) to recompute from scratch,
+ * with no memoized or cached intermediate tied to the old id. Extracted
+ * out of DashboardPage so this guarantee is independently testable rather
+ * than only inferable from reading the component.
+ */
+export function getMyPlacements(bids: Bid[], placements: Placement[], companyId: string): MyPlacementEntry[] {
+  return placements
+    .map((placement) => {
+      const ranked = getRankedBids(bids, placement.id)
+      const myBid = ranked.find((b) => b.companyId === companyId)
+      if (!myBid) return null
+      const outbid = isCompanyOutbid(bids, placement.id, companyId)
+      const leader = ranked[0]
+      return { placement, myBid, ranked, outbid, leader }
+    })
+    .filter((p): p is MyPlacementEntry => Boolean(p))
+}
+
+export interface AvailablePlacementEntry {
+  placement: Placement
+  ranked: RankedBid[]
+  leader: RankedBid | undefined
+}
+
+/** Placements this company isn't bidding on at all yet — same purity/isolation guarantee as getMyPlacements. */
+export function getAvailablePlacements(
+  bids: Bid[],
+  placements: Placement[],
+  companyId: string,
+): AvailablePlacementEntry[] {
+  const myPlacementIds = new Set(getMyPlacements(bids, placements, companyId).map((p) => p.placement.id))
+  return placements
+    .filter((placement) => !myPlacementIds.has(placement.id))
+    .map((placement) => {
+      const ranked = getRankedBids(bids, placement.id)
+      const leader = ranked[0] as RankedBid | undefined
+      return { placement, ranked, leader }
+    })
+}

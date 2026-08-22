@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { getRankedBids, getSponsoredSlice, isCompanyOutbid, getOrganicRanking } from './ranking'
-import type { Bid } from '@/mocks/types'
+import { getRankedBids, getSponsoredSlice, isCompanyOutbid, getOrganicRanking, getMyPlacements, getAvailablePlacements } from './ranking'
+import type { Bid, Placement } from '@/mocks/types'
 // Test-only use of the mock fixtures as sample domain data (companies/
 // placements) to exercise getOrganicRanking's pure logic — this is not an
 // application data source, just a convenient, realistic fixture set.
@@ -100,6 +100,54 @@ describe('isCompanyOutbid', () => {
   it('is false when the company has no bid on the placement', () => {
     const bids = [makeBid({ id: 'b1', companyId: 'other', amount: 800 })]
     expect(isCompanyOutbid(bids, 'pl-test', 'me')).toBe(false)
+  })
+})
+
+function makePlacement(overrides: Partial<Placement> & Pick<Placement, 'id'>): Placement {
+  return { type: 'homepage_featured', maxSponsoredSlots: 3, ...overrides }
+}
+
+describe('getMyPlacements / getAvailablePlacements (dashboard multi-company isolation)', () => {
+  // Directly exercises the Phase 31.1 bug report's exact scenario: company A
+  // has an active bid, company B has none anywhere. Switching which
+  // companyId is passed in — with the exact same bids/placements arrays,
+  // nothing refetched — must be the only thing that changes the result.
+  // If this ever fails, the isolation bug is in this pure derivation layer,
+  // not in React's rendering/remount lifecycle.
+  const placements = [makePlacement({ id: 'pl-1' }), makePlacement({ id: 'pl-2' })]
+  const bids = [makeBid({ id: 'b1', companyId: 'company-a', amount: 200, placementId: 'pl-1' })]
+
+  it("company A sees its own placement in myPlacements", () => {
+    const mine = getMyPlacements(bids, placements, 'company-a')
+    expect(mine).toHaveLength(1)
+    expect(mine[0].placement.id).toBe('pl-1')
+    expect(mine[0].myBid.companyId).toBe('company-a')
+  })
+
+  it("company B (no bids anywhere) sees an empty myPlacements — never company A's cards", () => {
+    const mine = getMyPlacements(bids, placements, 'company-b')
+    expect(mine).toEqual([])
+  })
+
+  it('company B sees both placements as available (bidding on neither)', () => {
+    const available = getAvailablePlacements(bids, placements, 'company-b')
+    expect(available.map((a) => a.placement.id).sort()).toEqual(['pl-1', 'pl-2'])
+  })
+
+  it("company A sees only the placement it hasn't bid on as available", () => {
+    const available = getAvailablePlacements(bids, placements, 'company-a')
+    expect(available.map((a) => a.placement.id)).toEqual(['pl-2'])
+  })
+
+  it('every myBid entry always belongs to the requested company — no cross-company leakage regardless of input order', () => {
+    const manyCompanyBids = [
+      makeBid({ id: 'b1', companyId: 'company-a', amount: 200, placementId: 'pl-1' }),
+      makeBid({ id: 'b2', companyId: 'company-b', amount: 300, placementId: 'pl-2' }),
+    ]
+    for (const companyId of ['company-a', 'company-b']) {
+      const mine = getMyPlacements(manyCompanyBids, placements, companyId)
+      expect(mine.every((p) => p.myBid.companyId === companyId)).toBe(true)
+    }
   })
 })
 
