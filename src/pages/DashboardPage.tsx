@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Pencil } from 'lucide-react'
+import { Plus, Pencil, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Company } from '@/mocks/types'
 import { useAuth } from '@/features/auth/useAuth'
@@ -19,7 +19,6 @@ import { CompetitorBidTable } from '@/features/dashboard/CompetitorBidTable'
 import { BidAdjustControl } from '@/features/dashboard/BidAdjustControl'
 import { StartBidCard } from '@/features/dashboard/StartBidCard'
 import { CompanyDealsTab } from '@/features/dashboard/CompanyDealsTab'
-import { SpendOverviewChart } from '@/features/dashboard/SpendOverviewChart'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 import { formatCurrency } from '@/lib/utils'
 
@@ -88,6 +87,9 @@ function DashboardWithCompanySelection({ companies }: { companies: Company[] }) 
           <Button type="button" variant="ghost" size="sm" onClick={() => setEditOpen(true)}>
             <Pencil className="h-3.5 w-3.5" /> Edit
           </Button>
+          <Link to={`/companies/${company.slug}`} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+            <ExternalLink className="h-3.5 w-3.5" /> View public profile
+          </Link>
         </div>
         <div className="flex items-center gap-2">
           <CompanySwitcher companies={companies} selectedId={company.id} onSelect={setSelectedId} />
@@ -299,44 +301,13 @@ function DashboardContent({ company }: { company: Company }) {
         <CompanyDealsTab companyId={company.id} />
       </TabsContent>
 
-      <TabsContent value="billing" className="mt-6 flex flex-col gap-6">
-        <div className="rounded-xl border border-border bg-surface p-5">
-          <h3 className="mb-4 font-semibold text-fg">Weekly spend</h3>
-          <SpendOverviewChart />
-          <p className="mt-3 text-xs text-fg-subtle">
-            Illustrative only — no real billing is connected in this prototype.
+      <TabsContent value="billing" className="mt-6">
+        <div className="rounded-2xl border border-dashed border-border bg-surface/60 p-8 text-center">
+          <p className="font-semibold text-fg">Billing is coming soon</p>
+          <p className="mx-auto mt-1.5 max-w-md text-sm text-fg-muted">
+            Invoices and spend history will appear here once payments are set up. Bidding and deals are unaffected —
+            there's nothing to pay yet.
           </p>
-        </div>
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full min-w-[420px] text-sm">
-            <thead>
-              <tr className="bg-surface-raised text-left text-fg-muted">
-                <th className="px-4 py-2.5 font-medium">Invoice</th>
-                <th className="px-4 py-2.5 font-medium">Period</th>
-                <th className="px-4 py-2.5 text-right font-medium">Amount</th>
-                <th className="px-4 py-2.5 text-right font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { id: 'INV-2026-0812', period: 'Aug 11 – Aug 17', amount: 1820, status: 'Paid' },
-                { id: 'INV-2026-0805', period: 'Aug 04 – Aug 10', amount: 1670, status: 'Paid' },
-                { id: 'INV-2026-0729', period: 'Jul 28 – Aug 03', amount: 1510, status: 'Paid' },
-                { id: 'INV-2026-0722', period: 'Jul 21 – Jul 27', amount: 1290, status: 'Paid' },
-              ].map((inv, i) => (
-                <tr key={inv.id} className={i % 2 === 1 ? 'border-t border-border bg-surface/50' : 'border-t border-border'}>
-                  <td className="px-4 py-2.5 text-fg-muted">{inv.id}</td>
-                  <td className="px-4 py-2.5 text-fg-muted">{inv.period}</td>
-                  <td className="font-numeral px-4 py-2.5 text-right text-fg">{formatCurrency(inv.amount)}</td>
-                  <td className="px-4 py-2.5 text-right">
-                    <span className="rounded-full bg-success/15 px-2 py-0.5 text-xs font-semibold text-success">
-                      {inv.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </TabsContent>
     </Tabs>
