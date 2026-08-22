@@ -37,3 +37,14 @@ export function isUniqueViolation(err: unknown): boolean {
 export function isRlsViolation(err: unknown): boolean {
   return typeof err === 'object' && err !== null && 'code' in err && (err as { code?: unknown }).code === '42501'
 }
+
+/**
+ * True if the error is a Postgres check-violation (23514) — for
+ * company_categories specifically, this means the max-5-categories trigger
+ * (company_categories_enforce_limit) rejected the write. The frontend
+ * already blocks selecting a 6th category, so this only matters for a
+ * direct-API-call bypass, same reasoning as isRlsViolation above.
+ */
+export function isCategoryLimitViolation(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && 'code' in err && (err as { code?: unknown }).code === '23514'
+}

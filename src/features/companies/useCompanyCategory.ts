@@ -1,16 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { setCompanyCategory } from '@/lib/supabase/mutations'
+import { setCompanyCategories } from '@/lib/supabase/mutations'
 
-interface SetCategoryArgs {
+interface SetCategoriesArgs {
   companyId: string
-  categoryId: string
+  categoryIds: string[]
 }
 
 /** Same cache invalidation set as useUploadCompanyLogo — anything that reads a company's categoryIds needs to refresh. */
-export function useSetCompanyCategory() {
+export function useSetCompanyCategories() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ companyId, categoryId }: SetCategoryArgs) => setCompanyCategory(companyId, categoryId),
+    mutationFn: ({ companyId, categoryIds }: SetCategoriesArgs) => setCompanyCategories(companyId, categoryIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['myCompanies'] })
       queryClient.invalidateQueries({ queryKey: ['companies'] })

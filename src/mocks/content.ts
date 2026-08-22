@@ -141,7 +141,7 @@ export const deals: Deal[] = [
     title: '30-day trial instead of the usual 14',
     discountLabel: 'Extended trial',
     expiresAt: '2026-09-20T23:59:00Z',
-    description: 'Sign up through Outbid and get a full 30 days of adaptive yoga sessions before you’re charged.',
+    description: 'Sign up through Repcastr and get a full 30 days of adaptive yoga sessions before you’re charged.',
     claimCount: 97,
   },
   {

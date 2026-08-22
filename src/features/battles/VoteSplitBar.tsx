@@ -76,7 +76,7 @@ export function VoteSplitBar({ battleId, companyA, companyB, votesA, votesB }: V
         open={authOpen}
         onOpenChange={setAuthOpen}
         title="Sign in to vote"
-        description="Create an account to help shape Outbid's rankings."
+        description="Create an account to help shape Repcastr's rankings."
       />
     </div>
   )

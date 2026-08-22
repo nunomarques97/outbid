@@ -19,7 +19,7 @@ interface AuthDialogProps {
 export function AuthDialog({
   open,
   onOpenChange,
-  title = 'Sign in to Outbid',
+  title = 'Sign in to Repcastr',
   description = 'Vote, save companies, and manage advertiser accounts.',
 }: AuthDialogProps) {
   const { isConfigured } = useAuth()
@@ -47,7 +47,7 @@ export function AuthDialog({
               <div className="mt-5 flex items-start gap-3 rounded-lg border border-danger/30 bg-danger/10 p-4 text-sm text-fg-muted">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
                 <p>
-                  Outbid isn't connected to Supabase yet. Accounts will work once{' '}
+                  Repcastr isn't connected to Supabase yet. Accounts will work once{' '}
                   <code className="rounded bg-surface-raised px-1 py-0.5 text-xs">VITE_SUPABASE_URL</code> and{' '}
                   <code className="rounded bg-surface-raised px-1 py-0.5 text-xs">VITE_SUPABASE_ANON_KEY</code> are
                   set — see <code className="rounded bg-surface-raised px-1 py-0.5 text-xs">.env.example</code>.

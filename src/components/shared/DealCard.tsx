@@ -26,7 +26,7 @@ export function DealCard({ deal, company }: { deal: Deal; company: Company }) {
   const left = daysLeft(deal.expiresAt)
   const expired = isExpired(deal.expiresAt)
   // A deal-specific landing page if the advertiser set one, otherwise the
-  // company's own site — Outbid never invents a destination.
+  // company's own site — Repcastr never invents a destination.
   const destinationWebsite = deal.destinationUrl || company.website
 
   const { data: categories = [] } = useCategories()
@@ -91,7 +91,7 @@ export function DealCard({ deal, company }: { deal: Deal; company: Company }) {
         </span>
 
         <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-          {/* Outbid shows the offer and sends the customer to it — it never
+          {/* Repcastr shows the offer and sends the customer to it — it never
               redeems or validates anything itself. This link is available
               regardless of watch/auth state, since it's public information,
               not something watching unlocks. */}

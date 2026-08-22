@@ -792,7 +792,7 @@ async function toPublicProfile(row: ProfileRow, reviewCount: number): Promise<Pu
 /**
  * null covers two indistinguishable cases on purpose: no profile exists at
  * this username, or one exists but is private and the caller isn't its
- * owner — RLS filters both down to zero rows the same way. Outbid doesn't
+ * owner — RLS filters both down to zero rows the same way. Repcastr doesn't
  * currently reveal which case it was; the profile page shows one neutral
  * "not available" state for both, which is a deliberate, simpler choice,
  * not an oversight (see the Phase 29 report).

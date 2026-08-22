@@ -133,20 +133,22 @@ export async function createCompany(input: {
 }
 
 /**
- * Replaces a company's category assignment (delete-then-insert, since the
+ * Replaces a company's category assignments (delete-then-insert, since the
  * row's primary key IS (company_id, category_id) — there's no in-place
  * update). Used by both creation (no existing rows, delete is a no-op) and
- * editing (actually replaces). Only a single category for now — the schema
- * itself is a genuine many-to-many join table, so supporting more than one
- * later needs no migration, just a UI that lets an advertiser pick more
- * than one.
+ * editing (actually replaces). A company may hold 1–MAX_COMPANY_CATEGORIES
+ * categories; the max is also enforced by a database trigger
+ * (company_categories_enforce_limit, see
+ * 20260822090000_category_architecture_v1.sql) so it holds even if this
+ * client-side check is bypassed.
  */
-export async function setCompanyCategory(companyId: string, categoryId: string): Promise<void> {
+export async function setCompanyCategories(companyId: string, categoryIds: string[]): Promise<void> {
   const { error: deleteError } = await supabase.from('company_categories').delete().eq('company_id', companyId)
   if (deleteError) throw deleteError
+  if (categoryIds.length === 0) return
   const { error: insertError } = await supabase
     .from('company_categories')
-    .insert({ company_id: companyId, category_id: categoryId })
+    .insert(categoryIds.map((categoryId) => ({ company_id: companyId, category_id: categoryId })))
   if (insertError) throw insertError
 }
 

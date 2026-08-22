@@ -123,3 +123,29 @@ export function getAvailablePlacements(
       return { placement, ranked, leader }
     })
 }
+
+export interface TopBidderEntry {
+  bid: RankedBid
+  placement: Placement
+  categoryId: string
+}
+
+/**
+ * Cross-category "Top Bidders" — one row per ACTIVE bid on a
+ * category_leaderboard placement, sorted by amount desc across every
+ * category (or, when categoryId is given, within just that one). This is
+ * deliberately one row per bid, not one row per company: a company with
+ * bids in two categories (e.g. Fitness and Coffee) has two different
+ * standings here, each tied to its own placement/category — never a
+ * fabricated "global" bid. See getMyPlacements for the same
+ * isolation/purity guarantee this shares.
+ */
+export function getTopBidders(bids: Bid[], placements: Placement[], categoryId?: string): TopBidderEntry[] {
+  const categoryPlacements = placements.filter(
+    (p) => p.type === 'category_leaderboard' && p.categoryId && (!categoryId || p.categoryId === categoryId),
+  )
+
+  return categoryPlacements
+    .flatMap((placement) => getRankedBids(bids, placement.id).map((bid) => ({ bid, placement, categoryId: placement.categoryId! })))
+    .sort((a, b) => b.bid.amount - a.bid.amount || new Date(a.bid.updatedAt).getTime() - new Date(b.bid.updatedAt).getTime())
+}

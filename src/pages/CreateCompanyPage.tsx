@@ -6,7 +6,7 @@ import { LoadingState } from '@/components/shared/QueryStates'
 import { buttonVariants } from '@/components/ui/button'
 
 /**
- * Outbid v1 is one-company-per-user, enforced server-side (see
+ * Repcastr v1 is one-company-per-user, enforced server-side (see
  * 20260822080000_one_company_per_user.sql) — a user who already has a
  * company would have their INSERT rejected by RLS if they submitted this
  * form anyway. Checking here and swapping in a clear message instead is
@@ -34,7 +34,7 @@ export function CreateCompanyPage() {
       ) : companyQuery.data ? (
         <div className="mt-8 rounded-xl border border-border bg-surface p-6 text-center">
           <p className="text-fg">You already manage {companyQuery.data.name}.</p>
-          <p className="mt-1 text-sm text-fg-muted">Outbid supports one company per account.</p>
+          <p className="mt-1 text-sm text-fg-muted">Repcastr supports one company per account.</p>
           <Link to="/dashboard" className={buttonVariants({ className: 'mt-4' })}>
             Go to your dashboard
           </Link>

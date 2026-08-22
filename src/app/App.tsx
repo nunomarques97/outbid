@@ -12,6 +12,7 @@ import { CompanyProfilePage } from '@/pages/CompanyProfilePage'
 import { SavedPage } from '@/pages/SavedPage'
 import { BattlePage } from '@/pages/BattlePage'
 import { DealsPage } from '@/pages/DealsPage'
+import { TopBiddersPage } from '@/pages/TopBiddersPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { CreateCompanyPage } from '@/pages/CreateCompanyPage'
 import { AuthCallbackPage } from '@/pages/AuthCallbackPage'
@@ -37,6 +38,7 @@ export function App() {
                 <Route path="/saved" element={<SavedPage />} />
                 <Route path="/battles/:id" element={<BattlePage />} />
                 <Route path="/deals" element={<DealsPage />} />
+                <Route path="/top-bidders" element={<TopBiddersPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/dashboard/new" element={<CreateCompanyPage />} />
                 <Route path="/auth/callback" element={<AuthCallbackPage />} />

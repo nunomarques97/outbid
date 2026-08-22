@@ -33,7 +33,7 @@ export function Hero() {
             Discover what’s actually worth your time — and watch companies fight for the spotlight.
           </h1>
           <p className="mt-5 max-w-xl text-lg text-fg-muted">
-            Outbid ranks companies by real user votes, then lets businesses bid — openly, in
+            Repcastr ranks companies by real user votes, then lets businesses bid — openly, in
             euros — for extra visibility. Every sponsored spot is labeled. Every bid is public.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -62,7 +62,7 @@ export function Hero() {
           className="rounded-2xl border border-border bg-surface p-5 shadow-2xl shadow-black/40"
         >
           <div className="mb-4 flex items-center justify-between">
-            <p className="text-xs font-bold uppercase tracking-widest text-fg-muted">Best Web Hosting</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-fg-muted">Best Technology</p>
             <span className="flex items-center gap-1.5 text-xs text-sponsored">
               <span className="h-1.5 w-1.5 rounded-full bg-sponsored" /> Sponsored
             </span>

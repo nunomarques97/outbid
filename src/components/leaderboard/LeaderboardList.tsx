@@ -31,11 +31,30 @@ export function LeaderboardList({ categoryId, organicLimit }: LeaderboardListPro
   const sponsored = placement ? getSponsoredSlice(bids, placement.id, placement.maxSponsoredSlots) : []
   const organic = getOrganicRanking(companies, bids, placement).slice(0, organicLimit)
 
+  // A category with genuinely zero companies gets one honest, unified empty
+  // state instead of two separate "nothing here" sections — and frames it
+  // as an open opportunity, not a dead end, since an empty category is
+  // still a real, browsable page (see Phase 33 Part 12).
+  if (companies.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-border bg-surface/60 p-8 text-center">
+        <p className="font-semibold text-fg">Nobody is here yet.</p>
+        <p className="mx-auto mt-1.5 max-w-sm text-sm text-fg-muted">
+          If your company belongs here, be one of the first.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      {sponsored.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <SectionLabel color="sponsored">Sponsored</SectionLabel>
+      <div className="flex flex-col gap-3">
+        <SectionLabel color="sponsored">Sponsored</SectionLabel>
+        {sponsored.length === 0 ? (
+          <p className="rounded-lg border border-border bg-surface/60 p-4 text-sm text-fg-muted">
+            No sponsored bidders yet. Be the first company to compete for visibility in this category.
+          </p>
+        ) : (
           <div className="flex flex-col gap-3">
             {sponsored.map((bid) => {
               const company = companies.find((c) => c.id === bid.companyId)
@@ -51,8 +70,8 @@ export function LeaderboardList({ categoryId, organicLimit }: LeaderboardListPro
               )
             })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="flex flex-col gap-3">
         <SectionLabel color="organic">Community ranked</SectionLabel>

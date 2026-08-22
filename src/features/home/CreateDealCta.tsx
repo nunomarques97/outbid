@@ -41,7 +41,7 @@ export function CreateDealCta({ className }: { className?: string }) {
         <Megaphone className="h-5 w-5 shrink-0 text-brand" />
         <div>
           <p className="font-semibold text-fg">Have a company?</p>
-          <p className="mt-0.5 text-sm text-fg-muted">Create a deal and get your offer in front of Outbid customers.</p>
+          <p className="mt-0.5 text-sm text-fg-muted">Create a deal and get your offer in front of Repcastr customers.</p>
         </div>
       </div>
       <Button type="button" onClick={handleClick} className="w-full shrink-0 sm:w-auto">
@@ -52,7 +52,7 @@ export function CreateDealCta({ className }: { className?: string }) {
         open={authOpen}
         onOpenChange={setAuthOpen}
         title="Sign in to create a deal"
-        description="Sign in or create an account, then set up your company to start posting deals on Outbid."
+        description="Sign in or create an account, then set up your company to start posting deals on Repcastr."
       />
     </div>
   )

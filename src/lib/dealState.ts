@@ -30,7 +30,7 @@ export function getDealCtaState({ expired, signedIn, managesCompany, watching }:
  * Deals for a "live/active only" surface (the homepage teaser) — unlike
  * getDeals()/sortDealsForDisplay(), which keeps expired deals (pushed to the
  * end) so /deals and a customer's own watch history can still find them,
- * this excludes expired deals entirely. Outbid doesn't manually curate
+ * this excludes expired deals entirely. Repcastr doesn't manually curate
  * which live deals appear, so the only two knobs are "is it still active"
  * and a deterministic order for the ones that are: soonest-expiring first,
  * same as the active portion of sortDealsForDisplay, then `id` as a final

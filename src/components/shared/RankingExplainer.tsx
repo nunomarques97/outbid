@@ -12,7 +12,7 @@ export function RankingExplainer() {
         <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-organic" />
         <p className="text-sm text-fg-muted">
           <span className="font-semibold text-fg">Community ranked</span> — earned visibility. Order
-          is driven entirely by votes from people browsing Outbid.
+          is driven entirely by votes from people browsing Repcastr.
         </p>
       </div>
     </div>

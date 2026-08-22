@@ -45,7 +45,7 @@ export function VoteButton({ companySlug, baseVotes, size = 'md' }: VoteButtonPr
         open={authOpen}
         onOpenChange={setAuthOpen}
         title="Sign in to vote"
-        description="Create an account to help shape Outbid's rankings."
+        description="Create an account to help shape Repcastr's rankings."
       />
     </>
   )

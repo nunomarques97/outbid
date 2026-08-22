@@ -18,7 +18,7 @@ interface BidSubmitInput {
 }
 
 /**
- * Outbid bids are one-way financial commitments: a company can raise a
+ * Repcastr bids are one-way financial commitments: a company can raise a
  * bid (paying the delta above what it's already paying to hold) or leave
  * it exactly where it is (free, no-op), but it can never lower it, and
  * there is no withdrawal — a bid stays active, at whatever amount it was

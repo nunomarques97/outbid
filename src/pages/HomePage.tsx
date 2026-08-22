@@ -2,6 +2,7 @@ import { Hero } from '@/features/home/Hero'
 import { HowItWorks } from '@/features/home/HowItWorks'
 import { TrendingSection } from '@/features/home/TrendingSection'
 import { RankingsPreview } from '@/features/home/RankingsPreview'
+import { TopBiddersSection } from '@/features/home/TopBiddersSection'
 import { TopRatedSection } from '@/features/home/TopRatedSection'
 import { BattleOfTheDay } from '@/features/home/BattleOfTheDay'
 import { DealsSection } from '@/features/home/DealsSection'
@@ -15,6 +16,7 @@ export function HomePage() {
       <TrendingSection />
       <SponsoredMechanicShowcase />
       <RankingsPreview />
+      <TopBiddersSection />
       <TopRatedSection />
       <BattleOfTheDay />
       <DealsSection />

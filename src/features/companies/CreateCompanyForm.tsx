@@ -2,14 +2,15 @@ import { useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { LogoPicker } from './LogoPicker'
 import { deriveSlug, deriveInitials, cn } from '@/lib/utils'
-import { useCreateCompany, isUniqueViolation, isRlsViolation } from './useCreateCompany'
+import { useCreateCompany, isUniqueViolation, isRlsViolation, isCategoryLimitViolation } from './useCreateCompany'
 import { useUploadCompanyLogo } from './useCompanyLogo'
-import { useSetCompanyCategory } from './useCompanyCategory'
+import { useSetCompanyCategories } from './useCompanyCategory'
 import { useCategories } from '@/lib/supabase/hooks'
+import { validateCategorySelection, MAX_COMPANY_CATEGORIES } from '@/lib/companyCategories'
+import { CategoryChipPicker } from '@/components/shared/CategoryChipPicker'
 
 const LOGO_COLORS = ['#6C5CE7', '#00B4D8', '#FB8500', '#F72585', '#06D6A0', '#3A86FF', '#FF006E', '#38B000']
 const CURRENT_YEAR = new Date().getFullYear()
@@ -20,7 +21,7 @@ interface FormValues {
   description: string
   website: string
   foundedYear: string
-  categoryId: string
+  categoryIds: string[]
 }
 
 type FormErrors = Partial<Record<keyof FormValues, string>>
@@ -43,8 +44,11 @@ function validate(values: FormValues): FormErrors {
 
   // Without a category, a company never appears in any category
   // leaderboard/page — the primary way customers discover companies —
-  // so this is required, not optional.
-  if (!values.categoryId) errors.categoryId = 'Choose a category.'
+  // so at least one is required, not optional. The upper bound keeps a
+  // company from selecting every category just to gain exposure (see
+  // validateCategorySelection).
+  const categoryError = validateCategorySelection(values.categoryIds)
+  if (categoryError) errors.categoryIds = categoryError
 
   return errors
 }
@@ -53,7 +57,7 @@ export function CreateCompanyForm() {
   const navigate = useNavigate()
   const mutation = useCreateCompany()
   const logoUpload = useUploadCompanyLogo()
-  const setCategoryMutation = useSetCompanyCategory()
+  const setCategoriesMutation = useSetCompanyCategories()
   const categoriesQuery = useCategories()
 
   const [values, setValues] = useState<FormValues>({
@@ -62,15 +66,24 @@ export function CreateCompanyForm() {
     description: '',
     website: '',
     foundedYear: String(CURRENT_YEAR),
-    categoryId: '',
+    categoryIds: [],
   })
   const [logoColor, setLogoColor] = useState(LOGO_COLORS[0])
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [errors, setErrors] = useState<FormErrors>({})
-  const submitting = mutation.isPending || logoUpload.isPending || setCategoryMutation.isPending
+  const submitting = mutation.isPending || logoUpload.isPending || setCategoriesMutation.isPending
 
-  function setField<K extends keyof FormValues>(key: K, value: string) {
+  function setField<K extends keyof FormValues>(key: K, value: FormValues[K]) {
     setValues((prev) => ({ ...prev, [key]: value }))
+  }
+
+  function toggleCategory(categoryId: string) {
+    setValues((prev) => ({
+      ...prev,
+      categoryIds: prev.categoryIds.includes(categoryId)
+        ? prev.categoryIds.filter((id) => id !== categoryId)
+        : [...prev.categoryIds, categoryId],
+    }))
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -91,18 +104,18 @@ export function CreateCompanyForm() {
         foundedYear: Number(values.foundedYear),
       })
 
-      // Same reasoning as the logo below: the category can only be set once
+      // Same reasoning as the logo below: categories can only be set once
       // the company exists. Unlike the logo, a company with no category is
       // invisible to category-based discovery, so this failure gets its
       // own clear message pointing at Edit rather than being silently
       // grouped with "the logo didn't work."
       try {
-        await setCategoryMutation.mutateAsync({ companyId: company.id, categoryId: values.categoryId })
+        await setCategoriesMutation.mutateAsync({ companyId: company.id, categoryIds: values.categoryIds })
       } catch (categoryErr) {
         toast.error(
           categoryErr instanceof Error
-            ? `${company.name} was created, but setting its category failed: ${categoryErr.message}. You can set it from Edit.`
-            : `${company.name} was created, but setting its category failed. You can set it from Edit.`,
+            ? `${company.name} was created, but setting its categories failed: ${categoryErr.message}. You can set them from Edit.`
+            : `${company.name} was created, but setting its categories failed. You can set them from Edit.`,
         )
         navigate('/dashboard', { replace: true })
         return
@@ -126,13 +139,15 @@ export function CreateCompanyForm() {
         }
       }
 
-      toast.success(`${company.name} is live on Outbid.`)
+      toast.success(`${company.name} is live on Repcastr.`)
       navigate('/dashboard', { replace: true })
     } catch (err) {
       if (isUniqueViolation(err)) {
-        setErrors((prev) => ({ ...prev, name: 'That name is already taken on Outbid — try a different one.' }))
+        setErrors((prev) => ({ ...prev, name: 'That name is already taken on Repcastr — try a different one.' }))
       } else if (isRlsViolation(err)) {
-        toast.error('You already manage a company — Outbid supports one company per account.')
+        toast.error('You already manage a company — Repcastr supports one company per account.')
+      } else if (isCategoryLimitViolation(err)) {
+        toast.error(`Choose at most ${MAX_COMPANY_CATEGORIES} categories.`)
       } else {
         toast.error(err instanceof Error ? err.message : 'Could not create the company. Please try again.')
       }
@@ -191,15 +206,17 @@ export function CreateCompanyForm() {
         />
       </Field>
 
-      <Field label="Category" error={errors.categoryId}>
-        <Select value={values.categoryId} onChange={(e) => setField('categoryId', e.target.value)}>
-          <option value="">Choose a category…</option>
-          {(categoriesQuery.data ?? []).map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </Select>
+      <Field label="Categories" error={errors.categoryIds}>
+        <p className="-mt-1 mb-2 text-xs text-fg-subtle">
+          Choose the categories that best describe your company (up to {MAX_COMPANY_CATEGORIES}).
+        </p>
+        <CategoryChipPicker
+          categories={categoriesQuery.data ?? []}
+          selectedIds={values.categoryIds}
+          onToggle={toggleCategory}
+          max={MAX_COMPANY_CATEGORIES}
+          disabled={submitting}
+        />
       </Field>
 
       <div className="grid gap-5 sm:grid-cols-2">
@@ -220,8 +237,8 @@ export function CreateCompanyForm() {
       <Button type="submit" disabled={submitting} className="mt-2">
         {mutation.isPending
           ? 'Creating…'
-          : setCategoryMutation.isPending
-            ? 'Setting category…'
+          : setCategoriesMutation.isPending
+            ? 'Setting categories…'
             : logoUpload.isPending
               ? 'Uploading logo…'
               : 'Create company'}

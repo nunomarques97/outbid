@@ -14,6 +14,6 @@ export interface AuthContextValue {
 }
 
 export const NOT_CONFIGURED_MESSAGE =
-  'Outbid isn’t connected to Supabase yet — add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable accounts.'
+  'Repcastr isn’t connected to Supabase yet — add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable accounts.'
 
 export const AuthContext = createContext<AuthContextValue | null>(null)

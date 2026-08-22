@@ -8,7 +8,7 @@ import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 import { formatCurrency } from '@/lib/utils'
 
-const SHOWCASE_CATEGORY_SLUG = 'project-management-tools'
+const SHOWCASE_CATEGORY_SLUG = 'software'
 
 export function SponsoredMechanicShowcase() {
   const categoriesQuery = useCategories()
@@ -33,7 +33,7 @@ export function SponsoredMechanicShowcase() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-sponsored">The Outbid mechanic</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-sponsored">How sponsored placement works</p>
             <h2 className="mt-3 text-2xl font-bold tracking-tight text-fg sm:text-3xl">
               Position is earned by bid — and it’s never hidden
             </h2>

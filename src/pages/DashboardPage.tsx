@@ -25,7 +25,7 @@ import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 import { formatCurrency } from '@/lib/utils'
 
 /**
- * Outbid v1 is one-company-per-user (enforced server-side — see
+ * Repcastr v1 is one-company-per-user (enforced server-side — see
  * company_members_user_id_unique in 20260822080000_one_company_per_user.sql).
  * There is no company selection step: the dashboard loads the signed-in
  * user's one company directly, or the "create your first company" state if
@@ -109,7 +109,7 @@ function NoCompanyState() {
     <div className="mx-auto max-w-xl px-4 py-24 text-center">
       <h1 className="text-2xl font-bold text-fg">You don't manage a company yet</h1>
       <p className="mt-2 text-fg-muted">
-        Create a business profile to start bidding for sponsored placement on Outbid.
+        Create a business profile to start bidding for sponsored placement on Repcastr.
       </p>
       <Link to="/dashboard/new" className={buttonVariants({ className: 'mt-6' })}>
         <Plus className="h-4 w-4" /> Create your company
@@ -220,7 +220,7 @@ function DashboardContent({ company }: { company: Company }) {
     // this early return is purely to skip a request that would fail
     // anyway. BidAdjustControl already disables its own submit button for
     // this case; this exists for any other caller of handlePlaceBid.
-    // OUTBID bids are one-way commitments — there is no lowering and no
+    // Repcastr bids are one-way commitments — there is no lowering and no
     // withdrawal, only raising or staying put.
     if (decision.action === 'rejected_lowering') {
       toast.error("Bids can't be lowered. If you want a higher position, increase your bid.")

@@ -41,7 +41,7 @@ export function UserProfilePage() {
 
   // A missing row means either "no profile at this username" or "private,
   // and you're not the owner" — RLS makes those indistinguishable, and
-  // Outbid deliberately doesn't try to tell them apart (see
+  // Repcastr deliberately doesn't try to tell them apart (see
   // getPublicProfileByUsername). One neutral state covers both.
   if (!profile) {
     return (
@@ -50,7 +50,7 @@ export function UserProfilePage() {
         <h1 className="mt-4 text-2xl font-bold text-fg">This profile isn't available</h1>
         <p className="mt-2 text-fg-muted">It may not exist, or the owner has kept it private.</p>
         <Link to="/" className={buttonVariants({ className: 'mt-6' })}>
-          Back to Outbid
+          Back to Repcastr
         </Link>
       </div>
     )

@@ -74,7 +74,7 @@ export function useMyCompanies() {
 }
 
 /**
- * The signed-in user's one company. Outbid v1 is one-company-per-user,
+ * The signed-in user's one company. Repcastr v1 is one-company-per-user,
  * enforced server-side (company_members_user_id_unique — see
  * 20260822080000_one_company_per_user.sql), so this is a thin derivation
  * over useMyCompanies() rather than a second query/cache entry: the array

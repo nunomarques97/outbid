@@ -4,10 +4,11 @@ import type { Company } from '@/mocks/types'
 import { useCategories } from '@/lib/supabase/hooks'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Select } from '@/components/ui/select'
+import { CategoryChipPicker } from '@/components/shared/CategoryChipPicker'
+import { validateCategorySelection, MAX_COMPANY_CATEGORIES } from '@/lib/companyCategories'
 import { LogoPicker } from './LogoPicker'
 import { useUploadCompanyLogo } from './useCompanyLogo'
-import { useSetCompanyCategory } from './useCompanyCategory'
+import { useSetCompanyCategories } from './useCompanyCategory'
 
 interface EditCompanyDialogProps {
   company: Company
@@ -31,7 +32,7 @@ interface EditCompanyDialogProps {
  * closing without saving, by any means, discards both pending choices.
  */
 export function EditCompanyDialog({ company, open, onOpenChange }: EditCompanyDialogProps) {
-  const currentCategoryId = company.categoryIds[0] ?? ''
+  const currentCategoryIds = company.categoryIds
   const categoriesQuery = useCategories()
 
   const [pendingFile, setPendingFile] = useState<File | null>(null)
@@ -39,19 +40,25 @@ export function EditCompanyDialog({ company, open, onOpenChange }: EditCompanyDi
   // LogoPicker drops its own internal preview state instead of continuing
   // to show a file the parent has already forgotten about.
   const [pickerKey, setPickerKey] = useState(0)
-  const [categoryId, setCategoryId] = useState(currentCategoryId)
+  const [categoryIds, setCategoryIds] = useState<string[]>(currentCategoryIds)
 
   const logoUpload = useUploadCompanyLogo()
-  const setCategoryMutation = useSetCompanyCategory()
-  const saving = logoUpload.isPending || setCategoryMutation.isPending
+  const setCategoriesMutation = useSetCompanyCategories()
+  const saving = logoUpload.isPending || setCategoriesMutation.isPending
 
-  const categoryChanged = categoryId !== currentCategoryId
-  const hasChanges = Boolean(pendingFile) || categoryChanged
+  const categoriesChanged =
+    categoryIds.length !== currentCategoryIds.length ||
+    [...categoryIds].sort().some((id, i) => id !== [...currentCategoryIds].sort()[i])
+  const hasChanges = Boolean(pendingFile) || categoriesChanged
+
+  function toggleCategory(categoryId: string) {
+    setCategoryIds((prev) => (prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId]))
+  }
 
   function discardPending() {
     setPendingFile(null)
     setPickerKey((k) => k + 1)
-    setCategoryId(currentCategoryId)
+    setCategoryIds(currentCategoryIds)
   }
 
   function handleOpenChange(next: boolean) {
@@ -60,16 +67,19 @@ export function EditCompanyDialog({ company, open, onOpenChange }: EditCompanyDi
   }
 
   async function handleSave() {
-    if (categoryChanged && !categoryId) {
-      toast.error('Choose a category.')
-      return
+    if (categoriesChanged) {
+      const categoryError = validateCategorySelection(categoryIds)
+      if (categoryError) {
+        toast.error(categoryError)
+        return
+      }
     }
     try {
       if (pendingFile) {
         await logoUpload.mutateAsync({ companyId: company.id, file: pendingFile, previousPath: company.logoPath })
       }
-      if (categoryChanged) {
-        await setCategoryMutation.mutateAsync({ companyId: company.id, categoryId })
+      if (categoriesChanged) {
+        await setCategoriesMutation.mutateAsync({ companyId: company.id, categoryIds })
       }
       toast.success('Company updated.')
       handleOpenChange(false)
@@ -82,7 +92,7 @@ export function EditCompanyDialog({ company, open, onOpenChange }: EditCompanyDi
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogTitle>Edit company</DialogTitle>
-        <DialogDescription>Update {company.name}'s logo and category.</DialogDescription>
+        <DialogDescription>Update {company.name}'s logo and categories.</DialogDescription>
 
         <div className="mt-5">
           <LogoPicker
@@ -95,22 +105,26 @@ export function EditCompanyDialog({ company, open, onOpenChange }: EditCompanyDi
           />
         </div>
 
-        <label className="mt-5 flex flex-col gap-1.5">
-          <span className="text-sm font-medium text-fg">Category</span>
-          <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} disabled={saving}>
-            <option value="">Choose a category…</option>
-            {(categoriesQuery.data ?? []).map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
-          {!currentCategoryId && (
-            <span className="text-xs text-danger">
-              This company has no category yet, so it won't appear in any category ranking. Choose one below.
-            </span>
+        <div className="mt-5">
+          <span className="text-sm font-medium text-fg">Categories</span>
+          <p className="mt-0.5 text-xs text-fg-subtle">
+            Choose the categories that best describe your company (up to {MAX_COMPANY_CATEGORIES}).
+          </p>
+          {currentCategoryIds.length === 0 && (
+            <p className="mt-1.5 text-xs text-danger">
+              This company has no category yet, so it won't appear in any category ranking. Choose at least one below.
+            </p>
           )}
-        </label>
+          <div className="mt-2">
+            <CategoryChipPicker
+              categories={categoriesQuery.data ?? []}
+              selectedIds={categoryIds}
+              onToggle={toggleCategory}
+              max={MAX_COMPANY_CATEGORIES}
+              disabled={saving}
+            />
+          </div>
+        </div>
 
         <dl className="mt-5 flex flex-col gap-2 rounded-lg border border-border bg-surface-raised p-3 text-sm">
           <Row label="Name" value={company.name} />

@@ -98,7 +98,7 @@ function SetNewPasswordForm() {
   return (
     <div className="mx-auto max-w-sm px-4 py-24">
       <h1 className="text-2xl font-bold text-fg">Set a new password</h1>
-      <p className="mt-2 text-fg-muted">Choose a new password for your Outbid account.</p>
+      <p className="mt-2 text-fg-muted">Choose a new password for your Repcastr account.</p>
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3">
         <Input
           type="password"
@@ -122,7 +122,7 @@ function CallbackError({ message }: { message: string }) {
     <div className="mx-auto max-w-md px-4 py-24 text-center">
       <ErrorState message={message} />
       <Link to="/" className="mt-4 inline-block text-sm font-semibold text-brand hover:underline">
-        Back to Outbid
+        Back to Repcastr
       </Link>
     </div>
   )

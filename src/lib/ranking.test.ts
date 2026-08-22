@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { getRankedBids, getSponsoredSlice, isCompanyOutbid, getOrganicRanking, getMyPlacements, getAvailablePlacements } from './ranking'
+import {
+  getRankedBids,
+  getSponsoredSlice,
+  isCompanyOutbid,
+  getOrganicRanking,
+  getMyPlacements,
+  getAvailablePlacements,
+  getTopBidders,
+} from './ranking'
 import type { Bid, Placement } from '@/mocks/types'
 // Test-only use of the mock fixtures as sample domain data (companies/
 // placements) to exercise getOrganicRanking's pure logic — this is not an
@@ -148,6 +156,58 @@ describe('getMyPlacements / getAvailablePlacements (dashboard multi-company isol
       const mine = getMyPlacements(manyCompanyBids, placements, companyId)
       expect(mine.every((p) => p.myBid.companyId === companyId)).toBe(true)
     }
+  })
+})
+
+describe('getTopBidders', () => {
+  const placements = [
+    makePlacement({ id: 'pl-fitness', type: 'category_leaderboard', categoryId: 'cat-fitness' }),
+    makePlacement({ id: 'pl-coffee', type: 'category_leaderboard', categoryId: 'cat-coffee' }),
+    // A non-category placement must never leak into Top Bidders — it isn't
+    // tied to any category, so there's nothing sensible to filter/label it by.
+    makePlacement({ id: 'pl-homepage', type: 'homepage_featured' }),
+  ]
+
+  it('orders bids across every category by amount, highest first', () => {
+    const bids = [
+      makeBid({ id: 'b1', companyId: 'co-a', amount: 180, placementId: 'pl-coffee' }),
+      makeBid({ id: 'b2', companyId: 'co-b', amount: 870, placementId: 'pl-fitness' }),
+      makeBid({ id: 'b3', companyId: 'co-a', amount: 300, placementId: 'pl-fitness' }),
+    ]
+    const top = getTopBidders(bids, placements)
+    expect(top.map((t) => ({ companyId: t.bid.companyId, amount: t.bid.amount }))).toEqual([
+      { companyId: 'co-b', amount: 870 },
+      { companyId: 'co-a', amount: 300 },
+      { companyId: 'co-a', amount: 180 },
+    ])
+  })
+
+  it('gives a company with bids in two categories two separate entries, not one merged bid', () => {
+    const bids = [
+      makeBid({ id: 'b1', companyId: 'multi-co', amount: 870, placementId: 'pl-fitness' }),
+      makeBid({ id: 'b2', companyId: 'multi-co', amount: 180, placementId: 'pl-coffee' }),
+    ]
+    const top = getTopBidders(bids, placements)
+    expect(top).toHaveLength(2)
+    expect(top.map((t) => t.categoryId).sort()).toEqual(['cat-coffee', 'cat-fitness'])
+  })
+
+  it('filters to a single category when categoryId is given', () => {
+    const bids = [
+      makeBid({ id: 'b1', companyId: 'co-a', amount: 180, placementId: 'pl-coffee' }),
+      makeBid({ id: 'b2', companyId: 'co-b', amount: 870, placementId: 'pl-fitness' }),
+    ]
+    const top = getTopBidders(bids, placements, 'cat-coffee')
+    expect(top.map((t) => t.bid.companyId)).toEqual(['co-a'])
+  })
+
+  it('excludes companies with no active bid — nobody appears as sponsored without one', () => {
+    expect(getTopBidders([], placements)).toEqual([])
+  })
+
+  it('never includes a non-category placement, even if it somehow held a bid', () => {
+    const bids = [makeBid({ id: 'b1', companyId: 'co-a', amount: 5000, placementId: 'pl-homepage' })]
+    expect(getTopBidders(bids, placements)).toEqual([])
   })
 })
 

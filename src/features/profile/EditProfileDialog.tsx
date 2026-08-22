@@ -7,9 +7,9 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { CategoryChipPicker } from '@/components/shared/CategoryChipPicker'
 import { AvatarPicker } from './AvatarPicker'
 import { useUpdateProfile, useUploadAvatar, useSetUserInterests } from './useProfileMutations'
-import { cn } from '@/lib/utils'
 
 interface EditProfileDialogProps {
   profile: PublicProfile
@@ -160,27 +160,13 @@ export function EditProfileDialog({ profile, open, onOpenChange }: EditProfileDi
         <div className="mt-1">
           <span className="text-sm font-medium text-fg">Interests</span>
           <p className="mt-0.5 text-xs text-fg-subtle">Categories you care about — shown on your profile.</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {(categoriesQuery.data ?? []).map((category) => {
-              const selected = selectedCategoryIds.includes(category.id)
-              return (
-                <button
-                  key={category.id}
-                  type="button"
-                  disabled={saving}
-                  aria-pressed={selected}
-                  onClick={() => toggleCategory(category.id)}
-                  className={cn(
-                    'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
-                    selected
-                      ? 'border-brand bg-brand/15 text-brand'
-                      : 'border-border bg-surface text-fg-muted hover:text-fg',
-                  )}
-                >
-                  {category.name}
-                </button>
-              )
-            })}
+          <div className="mt-2">
+            <CategoryChipPicker
+              categories={categoriesQuery.data ?? []}
+              selectedIds={selectedCategoryIds}
+              onToggle={toggleCategory}
+              disabled={saving}
+            />
           </div>
         </div>
 
