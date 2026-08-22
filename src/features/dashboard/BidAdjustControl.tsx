@@ -8,28 +8,21 @@ interface BidAdjustControlProps {
   currentAmount: number
   leaderAmount: number
   onSubmit: (amount: number) => void
-  onWithdraw?: () => void
   submitting?: boolean
-  withdrawing?: boolean
 }
 
 /**
  * Purely presentational — no bidding logic lives here beyond reusing
  * getBidSubmitDecision (the same pure helper DashboardPage uses) to decide
  * what to show and whether to allow submitting. The caller decides what
- * "submit"/"withdraw" actually do (DashboardPage wires these to the real
- * place_bid/create-bid-payment/withdraw_bid paths via useDashboardBids).
- * The server independently re-enforces this same rule — see
- * place_bid()'s own rejection of a lowered amount — this is UX only.
+ * "submit" actually does (DashboardPage wires it to the real
+ * place_bid/create-bid-payment paths via useDashboardBids). OUTBID bids
+ * are one-way commitments — there is no lowering and no withdrawal, only
+ * raising (paid) or staying put (free). The server independently
+ * re-enforces this same rule — see place_bid()'s own rejection of a
+ * lowered amount — this is UX only.
  */
-export function BidAdjustControl({
-  currentAmount,
-  leaderAmount,
-  onSubmit,
-  onWithdraw,
-  submitting,
-  withdrawing,
-}: BidAdjustControlProps) {
+export function BidAdjustControl({ currentAmount, leaderAmount, onSubmit, submitting }: BidAdjustControlProps) {
   const max = Math.max(currentAmount, leaderAmount) * 1.6
   const [value, setValue] = useState(currentAmount)
 
@@ -67,9 +60,7 @@ export function BidAdjustControl({
         </span>
       </div>
       {isLowering && (
-        <p className="mt-2 text-xs text-danger">
-          Bids can't be lowered — withdraw below if you want to reduce or leave this placement.
-        </p>
+        <p className="mt-2 text-xs text-danger">Bids can't be lowered. If you want a higher position, increase your bid.</p>
       )}
       <Button
         size="sm"
@@ -80,16 +71,6 @@ export function BidAdjustControl({
       >
         {buttonLabel}
       </Button>
-      {onWithdraw && (
-        <button
-          type="button"
-          disabled={withdrawing}
-          onClick={onWithdraw}
-          className="mt-2 w-full text-center text-xs text-fg-subtle hover:text-danger disabled:opacity-50"
-        >
-          {withdrawing ? 'Withdrawing…' : 'Withdraw from this placement'}
-        </button>
-      )}
     </div>
   )
 }

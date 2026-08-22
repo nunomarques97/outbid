@@ -67,14 +67,21 @@ function toPlacement(row: PlacementRow): Placement {
   }
 }
 
-/** DB status is active|withdrawn; 'paused' is the shared Bid type's "not competing" value. */
+/**
+ * getAllActiveBids (below) only ever fetches status='active' rows, so
+ * status here is always 'active' — a bid never reaches the client in any
+ * other state. There is no customer-facing withdrawal or lowering (see
+ * place_bid()'s rejection of both); a historical 'withdrawn' row in the
+ * database is simply excluded by that query filter, not mapped to
+ * anything here.
+ */
 function toBid(row: BidRow): Bid {
   return {
     id: row.id,
     companyId: row.company_id,
     placementId: row.placement_id,
     amount: Number(row.amount),
-    status: row.status === 'withdrawn' ? 'paused' : 'active',
+    status: 'active',
     updatedAt: row.updated_at,
   }
 }

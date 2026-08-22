@@ -20,11 +20,11 @@ interface BidSubmitInput {
 /**
  * Outbid bids are one-way financial commitments: a company can raise a
  * bid (paying the delta above what it's already paying to hold) or leave
- * it exactly where it is (free, no-op), but it can never lower it
- * directly — that isn't a free action, it isn't an action at all. A
- * company that wants to reduce its commitment must withdraw and, if it
- * wants back in later, pay again for a brand-new bid (see place_bid()'s
- * matching server-side rejection, the actual source of truth, in
+ * it exactly where it is (free, no-op), but it can never lower it, and
+ * there is no withdrawal — a bid stays active, at whatever amount it was
+ * last paid to, until a higher bid from someone else outranks it. The
+ * only way to change position is to raise (see place_bid()'s matching
+ * server-side rejection, the actual source of truth, in
  * supabase/migrations/20260822050000_reject_bid_lowering.sql).
  *
  * This is a UX helper only — it decides which client path to call and

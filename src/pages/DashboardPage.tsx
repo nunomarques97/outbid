@@ -7,7 +7,7 @@ import type { Company } from '@/mocks/types'
 import { useAuth } from '@/features/auth/useAuth'
 import { useMyCompanies, useCategories, usePlacements, useActiveBids, useAllCompanies } from '@/lib/supabase/hooks'
 import { getPlacementDisplayName } from '@/lib/supabase/queries'
-import { usePlaceBid, useWithdrawBid, useCreateBidPayment } from '@/features/dashboard/useDashboardBids'
+import { usePlaceBid, useCreateBidPayment } from '@/features/dashboard/useDashboardBids'
 import { getBidSubmitDecision } from '@/lib/bidPayment'
 import { getRankedBids, isCompanyOutbid } from '@/lib/ranking'
 import { CompanyAvatar } from '@/components/ui/avatar'
@@ -165,16 +165,16 @@ function DashboardContent({ company }: { company: Company }) {
   const allCompaniesQuery = useAllCompanies()
   const [tab, setTab] = useState('overview')
   const placeBidMutation = usePlaceBid()
-  const withdrawBidMutation = useWithdrawBid()
   const createBidPaymentMutation = useCreateBidPayment()
 
-  // Which single placement (and which action on it) is currently
-  // in-flight — placeBidMutation/withdrawBidMutation/createBidPaymentMutation
-  // are each one shared mutation instance reused across every placement's
-  // card, so their own `isPending` is true for ALL cards at once while any
-  // one of them is running. This scopes the loading state to only the
-  // specific card the user actually clicked.
-  const [pending, setPending] = useState<{ placementId: string; action: 'bid' | 'withdraw' } | null>(null)
+  // Which single placement is currently in-flight — placeBidMutation/
+  // createBidPaymentMutation are each one shared mutation instance reused
+  // across every placement's card, so their own `isPending` is true for
+  // ALL cards at once while either is running. This scopes the loading
+  // state to only the specific card the user actually clicked. No
+  // separate action discriminator needed — placing a bid is the only
+  // mutating action left (no withdrawal).
+  const [pendingPlacementId, setPendingPlacementId] = useState<string | null>(null)
 
   const loading =
     categoriesQuery.isLoading || placementsQuery.isLoading || bidsQuery.isLoading || allCompaniesQuery.isLoading
@@ -234,12 +234,14 @@ function DashboardContent({ company }: { company: Company }) {
     // this early return is purely to skip a request that would fail
     // anyway. BidAdjustControl already disables its own submit button for
     // this case; this exists for any other caller of handlePlaceBid.
+    // OUTBID bids are one-way commitments — there is no lowering and no
+    // withdrawal, only raising or staying put.
     if (decision.action === 'rejected_lowering') {
-      toast.error('Your bid cannot be lowered. Withdraw the bid if you want to leave this placement.')
+      toast.error("Bids can't be lowered. If you want a higher position, increase your bid.")
       return
     }
 
-    setPending({ placementId, action: 'bid' })
+    setPendingPlacementId(placementId)
 
     if (decision.action === 'free_same') {
       placeBidMutation.mutate(
@@ -247,11 +249,11 @@ function DashboardContent({ company }: { company: Company }) {
         {
           onSuccess: () => {
             toast.success(`Your bid on ${name} stays at ${formatCurrency(amount)}`)
-            setPending(null)
+            setPendingPlacementId(null)
           },
           onError: (err) => {
             toast.error(err instanceof Error ? err.message : 'Could not update your bid.')
-            setPending(null)
+            setPendingPlacementId(null)
           },
         },
       )
@@ -269,24 +271,7 @@ function DashboardContent({ company }: { company: Company }) {
         },
         onError: (err) => {
           toast.error(err instanceof Error ? err.message : 'Could not start payment.')
-          setPending(null)
-        },
-      },
-    )
-  }
-
-  function handleWithdrawBid(placementId: string, name: string) {
-    setPending({ placementId, action: 'withdraw' })
-    withdrawBidMutation.mutate(
-      { companyId: company.id, placementId },
-      {
-        onSuccess: () => {
-          toast.success(`Withdrew your bid from ${name}`)
-          setPending(null)
-        },
-        onError: (err) => {
-          toast.error(err instanceof Error ? err.message : 'Could not withdraw your bid.')
-          setPending(null)
+          setPendingPlacementId(null)
         },
       },
     )
@@ -373,10 +358,8 @@ function DashboardContent({ company }: { company: Company }) {
                 <BidAdjustControl
                   currentAmount={p.myBid.amount}
                   leaderAmount={p.leader.amount}
-                  submitting={pending?.placementId === p.placement.id && pending.action === 'bid'}
-                  withdrawing={pending?.placementId === p.placement.id && pending.action === 'withdraw'}
+                  submitting={pendingPlacementId === p.placement.id}
                   onSubmit={(amount) => handlePlaceBid(p.placement.id, name, amount, p.myBid.amount)}
-                  onWithdraw={() => handleWithdrawBid(p.placement.id, name)}
                 />
               </div>
             </div>
@@ -400,7 +383,7 @@ function DashboardContent({ company }: { company: Company }) {
                     leaderAmount={leader?.amount ?? 0}
                     activeBidderCount={ranked.length}
                     maxSponsoredSlots={placement.maxSponsoredSlots}
-                    submitting={pending?.placementId === placement.id && pending.action === 'bid'}
+                    submitting={pendingPlacementId === placement.id}
                     onSubmit={(amount) => handlePlaceBid(placement.id, name, amount, null)}
                   />
                 )

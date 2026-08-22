@@ -81,15 +81,6 @@ export async function placeBid(companyId: string, placementId: string, amount: n
   return data
 }
 
-export async function withdrawBid(companyId: string, placementId: string) {
-  const { data, error } = await supabase.rpc('withdraw_bid', {
-    p_company_id: companyId,
-    p_placement_id: placementId,
-  })
-  if (error) throw error
-  return data
-}
-
 /**
  * Starts a one-time Stripe payment for a new or raised bid — the only path
  * that can result in a bid actually being placed at that amount. Sends
