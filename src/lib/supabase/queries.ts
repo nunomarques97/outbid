@@ -27,7 +27,7 @@ type ProfileRow = Database['public']['Tables']['profiles']['Row']
 // ---------------------------------------------------------------------------
 
 function toCategory(row: CategoryRow): Category {
-  return { id: row.id, slug: row.slug, name: row.name, icon: row.icon, description: row.description }
+  return { id: row.id, slug: row.slug, name: row.name, icon: row.icon, description: row.description, isArchived: row.is_archived }
 }
 
 function toCompany(row: CompanyRow, categoryIds: string[], voteCount: number): Company {
@@ -237,8 +237,9 @@ export async function getPlacements(): Promise<Placement[]> {
   return data.map(toPlacement)
 }
 
-export function getPlacementForCategory(placements: Placement[], categoryId: string): Placement | null {
-  return placements.find((p) => p.type === 'category_leaderboard' && p.categoryId === categoryId) ?? null
+/** The single placement every company's one active sponsored bid lives on (see Phase 34). */
+export function getGlobalPlacement(placements: Placement[]): Placement | null {
+  return placements.find((p) => p.type === 'global_sponsored') ?? null
 }
 
 /**
@@ -253,6 +254,7 @@ export function getPlacementDisplayName(placement: Placement, categories: Catego
   }
   if (placement.type === 'homepage_featured') return 'Homepage Featured'
   if (placement.type === 'deal_spotlight') return 'Deal Spotlight'
+  if (placement.type === 'global_sponsored') return 'Global Sponsored Bid'
   return 'Placement'
 }
 

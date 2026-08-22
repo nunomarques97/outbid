@@ -1,8 +1,11 @@
-import type { Bid, Company, Placement } from '@/mocks/types'
+import type { Bid, Category, Company } from '@/mocks/types'
 
 export interface RankedBid extends Bid {
   rank: number
 }
+
+/** How many sponsored spots every category shows — a single shared constant rather than a per-category placement config, now that sponsorship is driven by one global bid, not a per-category placement (see getCategoryRanking). */
+export const CATEGORY_SPONSORED_SLOTS = 3
 
 /**
  * Ordered active bids for a placement, highest amount first. The tie-break
@@ -14,6 +17,14 @@ export interface RankedBid extends Bid {
  * creation; the client uses updatedAt since that's the timestamp available
  * on the shared Bid domain type — same "earlier wins ties" rule,
  * adjacent-but-not-identical source field).
+ *
+ * As of Phase 34, the only placement this is ever called with for
+ * sponsored-visibility purposes is the single global_sponsored placement —
+ * a company holds at most one active bid, full stop, enforced by the
+ * database's own UNIQUE(company_id, placement_id) plus there being exactly
+ * one row of this placement type. Category-scoped bidding no longer
+ * exists; categories only filter WHICH companies' global bids are
+ * eligible to appear where (see getCategoryRanking / getTopBidders below).
  */
 export function getRankedBids(bids: Bid[], placementId: string): RankedBid[] {
   return bids
@@ -23,10 +34,6 @@ export function getRankedBids(bids: Bid[], placementId: string): RankedBid[] {
       return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
     })
     .map((b, i) => ({ ...b, rank: i + 1 }))
-}
-
-export function getSponsoredSlice(bids: Bid[], placementId: string, maxSlots: number): RankedBid[] {
-  return getRankedBids(bids, placementId).slice(0, maxSlots)
 }
 
 /** True if some other active bid on this placement currently beats the given company's bid. */
@@ -46,106 +53,138 @@ export interface OrganicRankEntry {
   votes: number
 }
 
-/**
- * The community-ranked list for a category: every company NOT currently
- * occupying a paid sponsored slot there, ordered by votes. Centralized here
- * so the homepage preview, the category page, and company profiles never
- * compute this ranking three slightly-different ways.
- *
- * Deliberately source-agnostic: takes the already-scoped company list and
- * placement as plain data instead of reaching into a specific data source
- * itself (it used to import mock lookup functions directly, which meant it
- * could only ever rank mock data). `company.organicVotes` is expected to
- * already be the real, current vote total — this function only orders and
- * excludes sponsored companies, it never computes vote counts itself.
- */
-export function getOrganicRanking(companies: Company[], bids: Bid[], placement: Placement | null): OrganicRankEntry[] {
-  const sponsoredIds = new Set(
-    placement ? getSponsoredSlice(bids, placement.id, placement.maxSponsoredSlots).map((b) => b.companyId) : [],
-  )
+export interface CategoryRanking {
+  sponsored: RankedBid[]
+  organic: OrganicRankEntry[]
+}
 
-  return companies
+/**
+ * A category's two ranking layers, computed from the SAME single global
+ * bid every company holds (see getRankedBids above) — never a
+ * category-specific bid, since there's no such thing anymore. "Eligible"
+ * means the company lists this category among its (1–2) categories;
+ * "sponsored" is the top `maxSponsoredSlots` eligible companies by global
+ * bid amount, re-ranked 1..N within this category specifically (not the
+ * company's global rank, which may differ); "organic" is every other
+ * eligible company, ordered by community votes, completely uninfluenced
+ * by bid amount — a company can be #1 organic and #5 sponsored, or the
+ * reverse, in the very same category.
+ */
+export function getCategoryRanking(
+  companies: Company[],
+  bids: Bid[],
+  globalPlacementId: string,
+  categoryId: string,
+  maxSponsoredSlots: number,
+): CategoryRanking {
+  const eligible = companies.filter((c) => c.categoryIds.includes(categoryId))
+  const eligibleIds = new Set(eligible.map((c) => c.id))
+
+  const sponsored = getRankedBids(bids, globalPlacementId)
+    .filter((b) => eligibleIds.has(b.companyId))
+    .slice(0, maxSponsoredSlots)
+    .map((b, i) => ({ ...b, rank: i + 1 }))
+  const sponsoredIds = new Set(sponsored.map((b) => b.companyId))
+
+  const organic = eligible
     .filter((c) => !sponsoredIds.has(c.id))
     .map((c) => ({ company: c, votes: c.organicVotes }))
     .sort((a, b) => b.votes - a.votes)
+
+  return { sponsored, organic }
 }
 
-export interface MyPlacementEntry {
-  placement: Placement
-  myBid: RankedBid
+export interface GlobalBidStatus {
+  /** Every company's active global bid, ranked highest-first. */
   ranked: RankedBid[]
+  myBid: RankedBid | undefined
   outbid: boolean
-  leader: RankedBid
-}
-
-/**
- * The advertiser dashboard's "placements this company is bidding on."
- * Pure and stateless — takes companyId as a plain argument rather than
- * reading it from any component/session state, specifically so switching
- * companies can never leak a previous company's placements: calling this
- * again with a different companyId against the exact same bids/placements
- * arrays is guaranteed (not just expected) to recompute from scratch,
- * with no memoized or cached intermediate tied to the old id. Extracted
- * out of DashboardPage so this guarantee is independently testable rather
- * than only inferable from reading the component.
- */
-export function getMyPlacements(bids: Bid[], placements: Placement[], companyId: string): MyPlacementEntry[] {
-  return placements
-    .map((placement) => {
-      const ranked = getRankedBids(bids, placement.id)
-      const myBid = ranked.find((b) => b.companyId === companyId)
-      if (!myBid) return null
-      const outbid = isCompanyOutbid(bids, placement.id, companyId)
-      const leader = ranked[0]
-      return { placement, myBid, ranked, outbid, leader }
-    })
-    .filter((p): p is MyPlacementEntry => Boolean(p))
-}
-
-export interface AvailablePlacementEntry {
-  placement: Placement
-  ranked: RankedBid[]
   leader: RankedBid | undefined
 }
 
-/** Placements this company isn't bidding on at all yet — same purity/isolation guarantee as getMyPlacements. */
-export function getAvailablePlacements(
-  bids: Bid[],
-  placements: Placement[],
-  companyId: string,
-): AvailablePlacementEntry[] {
-  const myPlacementIds = new Set(getMyPlacements(bids, placements, companyId).map((p) => p.placement.id))
-  return placements
-    .filter((placement) => !myPlacementIds.has(placement.id))
-    .map((placement) => {
-      const ranked = getRankedBids(bids, placement.id)
-      const leader = ranked[0] as RankedBid | undefined
-      return { placement, ranked, leader }
-    })
+/**
+ * The advertiser dashboard's entire bidding picture — one company has at
+ * most one bid, so this replaces what used to be a per-placement list
+ * (getMyPlacements/getAvailablePlacements) with a single status. Pure and
+ * stateless — takes companyId as a plain argument rather than reading it
+ * from component/session state, so switching companies is guaranteed to
+ * recompute from scratch against the same bids array, never leaking a
+ * previous company's bid.
+ */
+export function getGlobalBidStatus(bids: Bid[], globalPlacementId: string, companyId: string): GlobalBidStatus {
+  const ranked = getRankedBids(bids, globalPlacementId)
+  const myBid = ranked.find((b) => b.companyId === companyId)
+  const leader = ranked[0]
+  const outbid = Boolean(myBid) && isCompanyOutbid(bids, globalPlacementId, companyId)
+  return { ranked, myBid, outbid, leader }
 }
 
 export interface TopBidderEntry {
+  company: Company
   bid: RankedBid
-  placement: Placement
-  categoryId: string
 }
 
 /**
- * Cross-category "Top Bidders" — one row per ACTIVE bid on a
- * category_leaderboard placement, sorted by amount desc across every
- * category (or, when categoryId is given, within just that one). This is
- * deliberately one row per bid, not one row per company: a company with
- * bids in two categories (e.g. Fitness and Coffee) has two different
- * standings here, each tied to its own placement/category — never a
- * fabricated "global" bid. See getMyPlacements for the same
- * isolation/purity guarantee this shares.
+ * Cross-category "Top Bidders" — ONE row per company (a company has only
+ * one active bid, so this falls out naturally rather than needing
+ * deduping), sorted by that bid's amount, optionally filtered to
+ * companies eligible in one category. Never shows the same company twice
+ * even if it belongs to two categories — see Phase 34 Part 4: a €1,000
+ * bid from a company in both Food & Dining and Shopping is one purchase,
+ * shown once in the "All categories" view, and once each time its
+ * category filter is applied — always the identical amount, since it's
+ * the identical bid.
  */
-export function getTopBidders(bids: Bid[], placements: Placement[], categoryId?: string): TopBidderEntry[] {
-  const categoryPlacements = placements.filter(
-    (p) => p.type === 'category_leaderboard' && p.categoryId && (!categoryId || p.categoryId === categoryId),
+export function getTopBidders(
+  companies: Company[],
+  bids: Bid[],
+  globalPlacementId: string,
+  categoryId?: string,
+): TopBidderEntry[] {
+  const eligibleIds = new Set(
+    (categoryId ? companies.filter((c) => c.categoryIds.includes(categoryId)) : companies).map((c) => c.id),
   )
+  const companiesById = new Map(companies.map((c) => [c.id, c]))
 
-  return categoryPlacements
-    .flatMap((placement) => getRankedBids(bids, placement.id).map((bid) => ({ bid, placement, categoryId: placement.categoryId! })))
-    .sort((a, b) => b.bid.amount - a.bid.amount || new Date(a.bid.updatedAt).getTime() - new Date(b.bid.updatedAt).getTime())
+  return getRankedBids(bids, globalPlacementId)
+    .filter((b) => eligibleIds.has(b.companyId))
+    .map((bid, i) => ({ bid: { ...bid, rank: i + 1 }, company: companiesById.get(bid.companyId) }))
+    .filter((e): e is TopBidderEntry => Boolean(e.company))
+}
+
+export interface CategoryBidTotal {
+  category: Category
+  total: number
+}
+
+/**
+ * Homepage "top categories" — ranked by the SUM of active global bid
+ * amounts across every company eligible in that category (a company in
+ * two categories contributes its one bid to both totals; that's not
+ * double-charging, it's the same purchase counting toward each place it's
+ * eligible to appear, exactly like getTopBidders' category filter).
+ * Categories with zero sponsored spend (total 0) are excluded — the
+ * homepage showcase is meant to highlight active commercial interest, not
+ * pad itself out with quiet categories (those stay fully browsable from
+ * "browse all categories," just not featured here).
+ */
+export function getTopCategoriesByBidTotal(
+  companies: Company[],
+  bids: Bid[],
+  globalPlacementId: string,
+  categories: Category[],
+  topN: number,
+): CategoryBidTotal[] {
+  const globalBidByCompany = new Map(getRankedBids(bids, globalPlacementId).map((b) => [b.companyId, b.amount]))
+
+  return categories
+    .map((category) => {
+      const total = companies
+        .filter((c) => c.categoryIds.includes(category.id))
+        .reduce((sum, c) => sum + (globalBidByCompany.get(c.id) ?? 0), 0)
+      return { category, total }
+    })
+    .filter((entry) => entry.total > 0)
+    .sort((a, b) => b.total - a.total || a.category.name.localeCompare(b.category.name))
+    .slice(0, topN)
 }

@@ -10,8 +10,8 @@ import {
   useDeals,
   useTrends,
 } from '@/lib/supabase/hooks'
-import { getPlacementForCategory } from '@/lib/supabase/queries'
-import { getSponsoredSlice } from '@/lib/ranking'
+import { getGlobalPlacement } from '@/lib/supabase/queries'
+import { getCategoryRanking, CATEGORY_SPONSORED_SLOTS } from '@/lib/ranking'
 import { LeaderboardList } from '@/components/leaderboard/LeaderboardList'
 import { RankingExplainer } from '@/components/shared/RankingExplainer'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
@@ -24,7 +24,10 @@ export function CategoryDetailPage() {
   if (categoriesQuery.isLoading) return <LoadingState label="Loading category…" />
   if (categoriesQuery.isError) return <ErrorState message="Couldn't load this category." />
 
-  const category = (categoriesQuery.data ?? []).find((c) => c.slug === slug)
+  // An archived category (merged into a broader one) is treated as
+  // not-found — it's no longer a valid discovery destination, even for an
+  // old bookmarked/shared link.
+  const category = (categoriesQuery.data ?? []).find((c) => c.slug === slug && !c.isArchived)
   if (!category) return <Navigate to="/categories" replace />
 
   return <CategoryDetailContent categoryId={category.id} categoryName={category.name} categoryDescription={category.description} categoryIcon={category.icon} />
@@ -75,9 +78,9 @@ function CategoryDetailContent({
   const relatedTrends = (trendsQuery.data ?? []).filter((t) => t.relatedCompanyIds.some((id) => companyIds.has(id)))
   const Icon = (Icons[categoryIcon as keyof typeof Icons] ?? Icons.Sparkles) as Icons.LucideIcon
 
-  const placement = getPlacementForCategory(placementsQuery.data ?? [], categoryId)
-  const sponsoredCount = placement
-    ? getSponsoredSlice(bidsQuery.data ?? [], placement.id, placement.maxSponsoredSlots).length
+  const globalPlacement = getGlobalPlacement(placementsQuery.data ?? [])
+  const sponsoredCount = globalPlacement
+    ? getCategoryRanking(categoryCompanies, bidsQuery.data ?? [], globalPlacement.id, categoryId, CATEGORY_SPONSORED_SLOTS).sponsored.length
     : 0
   const totalVotes = categoryCompanies.reduce((sum, c) => sum + c.organicVotes, 0)
 

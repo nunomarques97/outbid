@@ -162,7 +162,7 @@ export function EditProfileDialog({ profile, open, onOpenChange }: EditProfileDi
           <p className="mt-0.5 text-xs text-fg-subtle">Categories you care about — shown on your profile.</p>
           <div className="mt-2">
             <CategoryChipPicker
-              categories={categoriesQuery.data ?? []}
+              categories={(categoriesQuery.data ?? []).filter((c) => !c.isArchived)}
               selectedIds={selectedCategoryIds}
               onToggle={toggleCategory}
               disabled={saving}

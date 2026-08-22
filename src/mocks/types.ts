@@ -3,6 +3,7 @@ export type PlacementType =
   | 'homepage_featured'
   | 'comparison_sponsor'
   | 'deal_spotlight'
+  | 'global_sponsored'
 
 export interface Category {
   id: string
@@ -10,6 +11,8 @@ export interface Category {
   name: string
   icon: string
   description: string
+  /** True for a category merged into a broader one — kept for historical reference (labels on old records), never shown in discovery/picker UI. Mock categories never set this. */
+  isArchived?: boolean
 }
 
 export interface Company {

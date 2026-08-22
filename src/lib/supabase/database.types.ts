@@ -18,7 +18,12 @@
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
-export type PlacementType = 'category_leaderboard' | 'homepage_featured' | 'comparison_sponsor' | 'deal_spotlight'
+export type PlacementType =
+  | 'category_leaderboard'
+  | 'homepage_featured'
+  | 'comparison_sponsor'
+  | 'deal_spotlight'
+  | 'global_sponsored'
 export type BidStatus = 'active' | 'withdrawn'
 export type CompanyRole = 'owner' | 'editor'
 export type NotificationType = 'outbid' | 'bid_confirmed'
@@ -138,6 +143,7 @@ export interface Database {
           name: string
           icon: string
           description: string
+          is_archived: boolean
           created_at: string
         }
         Insert: {
@@ -146,6 +152,7 @@ export interface Database {
           name: string
           icon: string
           description: string
+          is_archived?: boolean
           created_at?: string
         }
         Update: Partial<Database['public']['Tables']['categories']['Insert']>

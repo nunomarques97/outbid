@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useCompaniesByCategory, usePlacements, useActiveBids, useAllCompanyRatingSummaries } from '@/lib/supabase/hooks'
-import { getPlacementForCategory } from '@/lib/supabase/queries'
-import { getSponsoredSlice, getOrganicRanking } from '@/lib/ranking'
+import { getGlobalPlacement } from '@/lib/supabase/queries'
+import { getCategoryRanking, CATEGORY_SPONSORED_SLOTS } from '@/lib/ranking'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 import { SponsoredEntryCard } from './SponsoredEntryCard'
 import { OrganicEntryCard } from './OrganicEntryCard'
@@ -26,10 +26,12 @@ export function LeaderboardList({ categoryId, organicLimit }: LeaderboardListPro
 
   const companies = companiesQuery.data ?? []
   const bids = bidsQuery.data ?? []
-  const placement = getPlacementForCategory(placementsQuery.data ?? [], categoryId)
+  const globalPlacement = getGlobalPlacement(placementsQuery.data ?? [])
 
-  const sponsored = placement ? getSponsoredSlice(bids, placement.id, placement.maxSponsoredSlots) : []
-  const organic = getOrganicRanking(companies, bids, placement).slice(0, organicLimit)
+  const { sponsored, organic: fullOrganic } = globalPlacement
+    ? getCategoryRanking(companies, bids, globalPlacement.id, categoryId, CATEGORY_SPONSORED_SLOTS)
+    : { sponsored: [], organic: [] }
+  const organic = fullOrganic.slice(0, organicLimit)
 
   // A category with genuinely zero companies gets one honest, unified empty
   // state instead of two separate "nothing here" sections — and frames it

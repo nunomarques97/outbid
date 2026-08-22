@@ -12,7 +12,8 @@ import {
   useCompaniesByCategory,
   useAllCompanyRatingSummaries,
 } from '@/lib/supabase/hooks'
-import { getSponsoredSlice, getOrganicRanking } from '@/lib/ranking'
+import { getRankedBids, getCategoryRanking, CATEGORY_SPONSORED_SLOTS } from '@/lib/ranking'
+import { getGlobalPlacement } from '@/lib/supabase/queries'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { VoteButton } from '@/components/shared/VoteButton'
 import { SaveButton } from '@/components/shared/SaveButton'
@@ -74,14 +75,29 @@ function CompanyProfileContent({ company }: { company: Company }) {
   const placements = placementsQuery.data ?? []
   const bids = bidsQuery.data ?? []
   const allCompanies = allCompaniesQuery.data ?? []
+  const globalPlacement = getGlobalPlacement(placements)
 
-  const sponsorships = placements
+  // One company holds one global bid, but that single bid can make it
+  // sponsored in more than one of its own (up to 2) categories — plus,
+  // separately, homepage_featured/deal_spotlight are their own
+  // independent placements a company can hold its own bid on.
+  const categorySponsorships = globalPlacement
+    ? companyCategories
+        .map((cat) => {
+          const { sponsored } = getCategoryRanking(allCompanies, bids, globalPlacement.id, cat.id, CATEGORY_SPONSORED_SLOTS)
+          const entry = sponsored.find((b) => b.companyId === company.id)
+          return entry ? { label: cat.name, rank: entry.rank, amount: entry.amount } : null
+        })
+        .filter((s): s is NonNullable<typeof s> => Boolean(s))
+    : []
+  const otherSponsorships = placements
+    .filter((p) => p.type === 'homepage_featured' || p.type === 'deal_spotlight')
     .map((p) => {
-      const slice = getSponsoredSlice(bids, p.id, p.maxSponsoredSlots)
-      const entry = slice.find((b) => b.companyId === company.id)
-      return entry ? { placement: p, rank: entry.rank, amount: entry.amount } : null
+      const entry = getRankedBids(bids, p.id).find((b) => b.companyId === company.id)
+      return entry ? { label: placementLabel(p.type), rank: entry.rank, amount: entry.amount } : null
     })
     .filter((s): s is NonNullable<typeof s> => Boolean(s))
+  const sponsorships = [...categorySponsorships, ...otherSponsorships]
 
   const relatedBattles = (battlesQuery.data ?? []).filter(
     (b) => b.companyAId === company.id || b.companyBId === company.id,
@@ -93,11 +109,16 @@ function CompanyProfileContent({ company }: { company: Company }) {
     .slice(0, 3)
 
   const organicRank = (() => {
-    if (!primaryCategoryId) return null
-    const placement = placements.find((p) => p.type === 'category_leaderboard' && p.categoryId === primaryCategoryId) ?? null
-    const organicList = getOrganicRanking(primaryCategoryCompaniesQuery.data ?? [], bids, placement)
-    const index = organicList.findIndex((entry) => entry.company.id === company.id)
-    return { rank: index === -1 ? null : index, of: organicList.length }
+    if (!primaryCategoryId || !globalPlacement) return null
+    const { organic } = getCategoryRanking(
+      primaryCategoryCompaniesQuery.data ?? [],
+      bids,
+      globalPlacement.id,
+      primaryCategoryId,
+      CATEGORY_SPONSORED_SLOTS,
+    )
+    const index = organic.findIndex((entry) => entry.company.id === company.id)
+    return { rank: index === -1 ? null : index, of: organic.length }
   })()
 
   return (
@@ -178,9 +199,9 @@ function CompanyProfileContent({ company }: { company: Company }) {
           </div>
           <div className="flex flex-col gap-2">
             {sponsorships.map((s) => (
-              <div key={s.placement.id} className="flex items-center justify-between text-sm">
+              <div key={s.label} className="flex items-center justify-between text-sm">
                 <span className="text-fg-muted">
-                  {placementLabel(s.placement.type)} — rank <span className="font-numeral text-sponsored">#{s.rank}</span>
+                  {s.label} — rank <span className="font-numeral text-sponsored">#{s.rank}</span>
                 </span>
                 <span className="font-numeral text-sponsored">{formatCurrency(s.amount)}</span>
               </div>

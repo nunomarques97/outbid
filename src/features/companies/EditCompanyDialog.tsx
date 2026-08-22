@@ -108,7 +108,7 @@ export function EditCompanyDialog({ company, open, onOpenChange }: EditCompanyDi
         <div className="mt-5">
           <span className="text-sm font-medium text-fg">Categories</span>
           <p className="mt-0.5 text-xs text-fg-subtle">
-            Choose the categories that best describe your company (up to {MAX_COMPANY_CATEGORIES}).
+            Choose up to {MAX_COMPANY_CATEGORIES} categories that best describe your company.
           </p>
           {currentCategoryIds.length === 0 && (
             <p className="mt-1.5 text-xs text-danger">
@@ -117,7 +117,7 @@ export function EditCompanyDialog({ company, open, onOpenChange }: EditCompanyDi
           )}
           <div className="mt-2">
             <CategoryChipPicker
-              categories={categoriesQuery.data ?? []}
+              categories={(categoriesQuery.data ?? []).filter((c) => !c.isArchived)}
               selectedIds={categoryIds}
               onToggle={toggleCategory}
               max={MAX_COMPANY_CATEGORIES}

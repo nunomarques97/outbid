@@ -1,25 +1,34 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowRight, TrendingUp } from 'lucide-react'
+import { ArrowRight, TrendingUp, Shuffle } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { useAllCompanies, useCategories } from '@/lib/supabase/hooks'
+import { useAllCompanies, useCategories, usePlacements, useActiveBids } from '@/lib/supabase/hooks'
+import { getGlobalPlacement } from '@/lib/supabase/queries'
+import { getTopBidders } from '@/lib/ranking'
 import { formatCurrency } from '@/lib/utils'
 
-const previewRows = [
-  { rank: 1, name: 'Corestack Hosting', initials: 'CS', color: '#3A86FF', bid: 910, sponsored: true },
-  { rank: 2, name: 'Nimbus Cloud', initials: 'NC', color: '#8338EC', bid: 680, sponsored: true },
-  { rank: 3, name: 'Anchorpoint Hosting', initials: 'AP', color: '#EF476F', bid: 430, sponsored: true },
-]
+const HERO_TOP_BIDDER_COUNT = 3
 
 export function Hero() {
-  // Shares the exact ['companies']/['categories'] query keys every other
-  // homepage section already warms — this never adds a second request, it
-  // just reads the same cache once it resolves. Undefined (still loading)
-  // simply hides that stat rather than flashing a false "0".
-  const companyCount = useAllCompanies().data?.length
+  const navigate = useNavigate()
+  const companiesQuery = useAllCompanies()
   const categoryCount = useCategories().data?.length
+  const placementsQuery = usePlacements()
+  const bidsQuery = useActiveBids()
+
+  const companies = companiesQuery.data ?? []
+  const globalPlacement = getGlobalPlacement(placementsQuery.data ?? [])
+  const topBidders = globalPlacement
+    ? getTopBidders(companies, bidsQuery.data ?? [], globalPlacement.id).slice(0, HERO_TOP_BIDDER_COUNT)
+    : []
+
+  function handleRateRandomCompany() {
+    if (companies.length === 0) return
+    const random = companies[Math.floor(Math.random() * companies.length)]
+    navigate(`/companies/${random.slug}`)
+  }
 
   return (
     <section className="relative overflow-hidden border-b border-border">
@@ -43,10 +52,18 @@ export function Hero() {
             <Link to="/dashboard" className={buttonVariants({ variant: 'secondary', size: 'lg' })}>
               For Businesses
             </Link>
+            <button
+              type="button"
+              onClick={handleRateRandomCompany}
+              disabled={companies.length === 0}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-fg-muted transition-colors hover:text-fg disabled:pointer-events-none disabled:opacity-50"
+            >
+              <Shuffle className="h-3.5 w-3.5" /> Rate a random company
+            </button>
           </div>
           <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-3 text-sm text-fg-muted">
-            {companyCount !== undefined && (
-              <span><strong className="font-numeral text-fg">{companyCount}</strong> companies ranked</span>
+            {companiesQuery.data !== undefined && (
+              <span><strong className="font-numeral text-fg">{companies.length}</strong> companies ranked</span>
             )}
             {categoryCount !== undefined && (
               <span><strong className="font-numeral text-fg">{categoryCount}</strong> categories</span>
@@ -62,27 +79,31 @@ export function Hero() {
           className="rounded-2xl border border-border bg-surface p-5 shadow-2xl shadow-black/40"
         >
           <div className="mb-4 flex items-center justify-between">
-            <p className="text-xs font-bold uppercase tracking-widest text-fg-muted">Best Technology</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-fg-muted">Top bidders</p>
             <span className="flex items-center gap-1.5 text-xs text-sponsored">
               <span className="h-1.5 w-1.5 rounded-full bg-sponsored" /> Sponsored
             </span>
           </div>
-          <div className="flex flex-col gap-2.5">
-            {previewRows.map((row, i) => (
-              <motion.div
-                key={row.name}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.15 + i * 0.1, duration: 0.4 }}
-                className="flex items-center gap-3 rounded-lg border border-sponsored/25 bg-surface-raised p-3 shadow-glow-gold"
-              >
-                <span className="font-numeral w-4 text-center text-sponsored">{row.rank}</span>
-                <CompanyAvatar initials={row.initials} color={row.color} size="sm" />
-                <span className="flex-1 truncate text-sm font-medium text-fg">{row.name}</span>
-                <span className="font-numeral text-sm text-sponsored">{formatCurrency(row.bid)}</span>
-              </motion.div>
-            ))}
-          </div>
+          {topBidders.length === 0 ? (
+            <p className="py-6 text-center text-sm text-fg-muted">No sponsored bidders yet — be the first.</p>
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {topBidders.map((entry, i) => (
+                <motion.div
+                  key={entry.company.id}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.15 + i * 0.1, duration: 0.4 }}
+                  className="flex items-center gap-3 rounded-lg border border-sponsored/25 bg-surface-raised p-3 shadow-glow-gold"
+                >
+                  <span className="font-numeral w-4 text-center text-sponsored">{entry.bid.rank}</span>
+                  <CompanyAvatar initials={entry.company.initials} color={entry.company.logoColor} logoUrl={entry.company.logoUrl} size="sm" />
+                  <span className="flex-1 truncate text-sm font-medium text-fg">{entry.company.name}</span>
+                  <span className="font-numeral text-sm text-sponsored">{formatCurrency(entry.bid.amount)}</span>
+                </motion.div>
+              ))}
+            </div>
+          )}
           <p className="mt-4 text-xs leading-relaxed text-fg-subtle">
             Higher bid, higher position. If a competitor outbids them tomorrow, this order
             changes — live.

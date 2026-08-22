@@ -16,7 +16,7 @@ interface BidAdjustControlProps {
  * getBidSubmitDecision (the same pure helper DashboardPage uses) to decide
  * what to show and whether to allow submitting. The caller decides what
  * "submit" actually does (DashboardPage wires it to the real
- * place_bid/create-bid-payment paths via useDashboardBids). OUTBID bids
+ * place_bid/create-bid-payment paths via useDashboardBids). Repcastr bids
  * are one-way commitments — there is no lowering and no withdrawal, only
  * raising (paid) or staying put (free). The server independently
  * re-enforces this same rule — see place_bid()'s own rejection of a

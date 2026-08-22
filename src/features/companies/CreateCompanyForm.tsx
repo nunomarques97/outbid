@@ -208,10 +208,10 @@ export function CreateCompanyForm() {
 
       <Field label="Categories" error={errors.categoryIds}>
         <p className="-mt-1 mb-2 text-xs text-fg-subtle">
-          Choose the categories that best describe your company (up to {MAX_COMPANY_CATEGORIES}).
+          Choose up to {MAX_COMPANY_CATEGORIES} categories that best describe your company.
         </p>
         <CategoryChipPicker
-          categories={categoriesQuery.data ?? []}
+          categories={(categoriesQuery.data ?? []).filter((c) => !c.isArchived)}
           selectedIds={values.categoryIds}
           onToggle={toggleCategory}
           max={MAX_COMPANY_CATEGORIES}

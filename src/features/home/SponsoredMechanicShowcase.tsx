@@ -1,14 +1,12 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { useCategories, useAllCompanies, usePlacements, useActiveBids } from '@/lib/supabase/hooks'
-import { getPlacementForCategory } from '@/lib/supabase/queries'
-import { getSponsoredSlice } from '@/lib/ranking'
+import { getGlobalPlacement } from '@/lib/supabase/queries'
+import { getCategoryRanking, getTopCategoriesByBidTotal, CATEGORY_SPONSORED_SLOTS } from '@/lib/ranking'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 import { formatCurrency } from '@/lib/utils'
-
-const SHOWCASE_CATEGORY_SLUG = 'software'
 
 export function SponsoredMechanicShowcase() {
   const categoriesQuery = useCategories()
@@ -23,10 +21,20 @@ export function SponsoredMechanicShowcase() {
     return <ErrorState message="Couldn't load the sponsored leaderboard example." />
   }
 
-  const category = (categoriesQuery.data ?? []).find((c) => c.slug === SHOWCASE_CATEGORY_SLUG)
-  const placement = category ? getPlacementForCategory(placementsQuery.data ?? [], category.id) : null
-  const ranked = placement ? getSponsoredSlice(bidsQuery.data ?? [], placement.id, 3) : []
+  const categories = (categoriesQuery.data ?? []).filter((c) => !c.isArchived)
   const companies = companiesQuery.data ?? []
+  const bids = bidsQuery.data ?? []
+  const globalPlacement = getGlobalPlacement(placementsQuery.data ?? [])
+
+  // Whichever category currently has the most active sponsored interest —
+  // always a real, live example instead of a hardcoded category. Falls
+  // back to the first category when nothing has an active bid yet.
+  const topCategory = globalPlacement ? getTopCategoriesByBidTotal(companies, bids, globalPlacement.id, categories, 1)[0] : undefined
+  const category = topCategory?.category ?? categories[0]
+  const ranked =
+    globalPlacement && category
+      ? getCategoryRanking(companies, bids, globalPlacement.id, category.id, CATEGORY_SPONSORED_SLOTS).sponsored
+      : []
 
   return (
     <section className="border-y border-border bg-surface/40">
@@ -38,9 +46,9 @@ export function SponsoredMechanicShowcase() {
               Position is earned by bid — and it’s never hidden
             </h2>
             <p className="mt-4 text-fg-muted">
-              Every category has a small number of sponsored spots. Companies bid openly in
-              euros for them. The highest bidder takes the top position — and if a competitor
-              bids higher tomorrow, they take it back.
+              Every company makes one active bid. Companies choose where they're eligible to
+              appear — the highest bid in a category takes the top sponsored position, and if a
+              competitor bids higher tomorrow, they take it back.
             </p>
             <p className="mt-3 text-fg-muted">
               Nothing about this affects the <span className="text-organic">Community Ranked</span>{' '}

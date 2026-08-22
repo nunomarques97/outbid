@@ -18,11 +18,11 @@ export function CategoriesPage() {
         <LoadingState label="Loading categories…" />
       ) : categoriesQuery.isError || companiesQuery.isError ? (
         <ErrorState message="Couldn't load categories." />
-      ) : (categoriesQuery.data ?? []).length === 0 ? (
+      ) : (categoriesQuery.data ?? []).filter((c) => !c.isArchived).length === 0 ? (
         <EmptyState message="No categories yet." />
       ) : (
         <div className="mt-8 grid gap-5 sm:grid-cols-2">
-          {(categoriesQuery.data ?? []).map((category) => {
+          {(categoriesQuery.data ?? []).filter((c) => !c.isArchived).map((category) => {
             const Icon = (Icons[category.icon as keyof typeof Icons] ?? Icons.Sparkles) as Icons.LucideIcon
             const count = (companiesQuery.data ?? []).filter((c) => c.categoryIds.includes(category.id)).length
             return (

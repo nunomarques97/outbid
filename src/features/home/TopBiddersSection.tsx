@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Crown } from 'lucide-react'
 import { useCategories, useAllCompanies, usePlacements, useActiveBids } from '@/lib/supabase/hooks'
+import { getGlobalPlacement } from '@/lib/supabase/queries'
 import { getTopBidders } from '@/lib/ranking'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
@@ -11,8 +12,9 @@ const HOMEPAGE_TOP_BIDDER_COUNT = 4
 
 /**
  * A different concept from RankingsPreview (community votes) and
- * DealsSection (advertiser-created deals): this is purely "who's currently
- * paying the most for sponsored visibility, across every category."
+ * DealsSection (advertiser-created deals): who's currently holding the
+ * highest active sponsored bid, one row per company (see getTopBidders —
+ * a company has exactly one bid no matter how many categories it's in).
  */
 export function TopBiddersSection() {
   const categoriesQuery = useCategories()
@@ -29,7 +31,10 @@ export function TopBiddersSection() {
 
   const categories = categoriesQuery.data ?? []
   const companies = companiesQuery.data ?? []
-  const entries = getTopBidders(bidsQuery.data ?? [], placementsQuery.data ?? []).slice(0, HOMEPAGE_TOP_BIDDER_COUNT)
+  const globalPlacement = getGlobalPlacement(placementsQuery.data ?? [])
+  const entries = globalPlacement
+    ? getTopBidders(companies, bidsQuery.data ?? [], globalPlacement.id).slice(0, HOMEPAGE_TOP_BIDDER_COUNT)
+    : []
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
@@ -53,26 +58,28 @@ export function TopBiddersSection() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {entries.map((entry, i) => {
-            const company = companies.find((c) => c.id === entry.bid.companyId)
-            const category = categories.find((c) => c.id === entry.categoryId)
-            if (!company) return null
+            const entryCategories = categories.filter((c) => entry.company.categoryIds.includes(c.id))
             return (
               <div
-                key={`${entry.placement.id}-${entry.bid.companyId}`}
+                key={entry.company.id}
                 className="flex flex-col gap-3 rounded-xl border border-sponsored/25 bg-surface p-4 shadow-glow-gold"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-numeral text-xs text-sponsored">#{i + 1}</span>
                   <SponsoredBadge size="sm" />
                 </div>
-                <Link to={`/companies/${company.slug}`} className="flex items-center gap-2.5 hover:opacity-90">
-                  <CompanyAvatar initials={company.initials} color={company.logoColor} logoUrl={company.logoUrl} size="sm" />
-                  <span className="truncate text-sm font-semibold text-fg">{company.name}</span>
+                <Link to={`/companies/${entry.company.slug}`} className="flex items-center gap-2.5 hover:opacity-90">
+                  <CompanyAvatar initials={entry.company.initials} color={entry.company.logoColor} logoUrl={entry.company.logoUrl} size="sm" />
+                  <span className="truncate text-sm font-semibold text-fg">{entry.company.name}</span>
                 </Link>
-                {category && (
-                  <Link to={`/categories/${category.slug}`} className="-mt-1.5 truncate text-xs text-fg-subtle hover:text-fg hover:underline">
-                    {category.name}
-                  </Link>
+                {entryCategories.length > 0 && (
+                  <div className="-mt-1.5 flex flex-wrap gap-x-2 gap-y-0.5">
+                    {entryCategories.map((c) => (
+                      <Link key={c.id} to={`/categories/${c.slug}`} className="truncate text-xs text-fg-subtle hover:text-fg hover:underline">
+                        {c.name}
+                      </Link>
+                    ))}
+                  </div>
                 )}
                 <span className="font-numeral text-lg font-bold text-sponsored">{formatCurrency(entry.bid.amount)}</span>
               </div>

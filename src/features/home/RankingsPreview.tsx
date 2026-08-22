@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
 import * as Icons from 'lucide-react'
 import { useCategories, useAllCompanies, usePlacements, useActiveBids, useAllCompanyRatingSummaries } from '@/lib/supabase/hooks'
-import { getPlacementForCategory } from '@/lib/supabase/queries'
-import { getSponsoredSlice, getOrganicRanking } from '@/lib/ranking'
+import { getGlobalPlacement } from '@/lib/supabase/queries'
+import { getCategoryRanking, getTopCategoriesByBidTotal, CATEGORY_SPONSORED_SLOTS } from '@/lib/ranking'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
 import { CompanyRatingInline } from '@/features/reviews/CompanyRatingInline'
@@ -24,28 +24,38 @@ export function RankingsPreview() {
     return <ErrorState message="Couldn't load category rankings." />
   }
 
-  const categories = categoriesQuery.data ?? []
+  const allCategories = (categoriesQuery.data ?? []).filter((c) => !c.isArchived)
   const companies = companiesQuery.data ?? []
-  const placements = placementsQuery.data ?? []
   const bids = bidsQuery.data ?? []
-  if (categories.length === 0) return null
+  const globalPlacement = getGlobalPlacement(placementsQuery.data ?? [])
+  if (allCategories.length === 0) return null
+
+  // The three categories with the most active commercial interest (sum of
+  // eligible companies' global bids) lead the homepage — not every
+  // category equally. When nothing has an active bid yet (a fresh
+  // marketplace), fall back to the first three so the section still shows
+  // real community rankings instead of going empty.
+  const topByBids = globalPlacement
+    ? getTopCategoriesByBidTotal(companies, bids, globalPlacement.id, allCategories, 3)
+    : []
+  const categories = topByBids.length > 0 ? topByBids.map((t) => t.category) : allCategories.slice(0, 3)
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight text-fg sm:text-3xl">Top rankings by category</h2>
         <Link to="/categories" className="text-sm font-semibold text-brand hover:underline">
-          View all
+          Browse all categories →
         </Link>
       </div>
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid gap-5 sm:grid-cols-3">
         {categories.map((category) => {
           const Icon = (Icons[category.icon as keyof typeof Icons] ?? Icons.Sparkles) as Icons.LucideIcon
-          const placement = getPlacementForCategory(placements, category.id)
-          const categoryCompanies = companies.filter((c) => c.categoryIds.includes(category.id))
-          const sponsored = placement ? getSponsoredSlice(bids, placement.id, placement.maxSponsoredSlots) : []
+          const { sponsored, organic } = globalPlacement
+            ? getCategoryRanking(companies, bids, globalPlacement.id, category.id, CATEGORY_SPONSORED_SLOTS)
+            : { sponsored: [], organic: [] }
           const topSponsoredCompany = sponsored[0] ? companies.find((c) => c.id === sponsored[0].companyId) : undefined
-          const topOrganic = getOrganicRanking(categoryCompanies, bids, placement).slice(0, 2)
+          const topOrganic = organic.slice(0, 2)
 
           return (
             <div

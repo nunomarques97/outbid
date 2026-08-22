@@ -9,7 +9,6 @@ interface StartBidCardProps {
   leaderName: string | null
   leaderAmount: number
   activeBidderCount: number
-  maxSponsoredSlots: number
   onSubmit: (amount: number) => void
   submitting?: boolean
 }
@@ -24,7 +23,6 @@ export function StartBidCard({
   leaderName,
   leaderAmount,
   activeBidderCount,
-  maxSponsoredSlots,
   onSubmit,
   submitting,
 }: StartBidCardProps) {
@@ -40,7 +38,7 @@ export function StartBidCard({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-semibold text-fg">{placementName}</h3>
         <span className="text-xs text-fg-subtle">
-          {activeBidderCount} of {maxSponsoredSlots} sponsored spots taken
+          {activeBidderCount} active {activeBidderCount === 1 ? 'bidder' : 'bidders'}
         </span>
       </div>
       <p className="mt-1 text-sm text-fg-muted">

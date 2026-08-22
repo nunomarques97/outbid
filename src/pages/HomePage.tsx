@@ -1,22 +1,24 @@
 import { Hero } from '@/features/home/Hero'
-import { HowItWorks } from '@/features/home/HowItWorks'
-import { TrendingSection } from '@/features/home/TrendingSection'
-import { RankingsPreview } from '@/features/home/RankingsPreview'
 import { TopBiddersSection } from '@/features/home/TopBiddersSection'
+import { CreateCompanyCta } from '@/features/home/CreateCompanyCta'
+import { HowItWorks } from '@/features/home/HowItWorks'
+import { SponsoredMechanicShowcase } from '@/features/home/SponsoredMechanicShowcase'
+import { RankingsPreview } from '@/features/home/RankingsPreview'
+import { TrendingSection } from '@/features/home/TrendingSection'
 import { TopRatedSection } from '@/features/home/TopRatedSection'
 import { BattleOfTheDay } from '@/features/home/BattleOfTheDay'
 import { DealsSection } from '@/features/home/DealsSection'
-import { SponsoredMechanicShowcase } from '@/features/home/SponsoredMechanicShowcase'
 
 export function HomePage() {
   return (
     <>
       <Hero />
+      <TopBiddersSection />
+      <CreateCompanyCta />
       <HowItWorks />
-      <TrendingSection />
       <SponsoredMechanicShowcase />
       <RankingsPreview />
-      <TopBiddersSection />
+      <TrendingSection />
       <TopRatedSection />
       <BattleOfTheDay />
       <DealsSection />

@@ -5,11 +5,11 @@ import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Company } from '@/mocks/types'
 import { useAuth } from '@/features/auth/useAuth'
-import { useMyCompany, useCategories, usePlacements, useActiveBids, useAllCompanies } from '@/lib/supabase/hooks'
-import { getPlacementDisplayName } from '@/lib/supabase/queries'
+import { useMyCompany, usePlacements, useActiveBids, useAllCompanies } from '@/lib/supabase/hooks'
+import { getGlobalPlacement } from '@/lib/supabase/queries'
 import { usePlaceBid, useCreateBidPayment } from '@/features/dashboard/useDashboardBids'
 import { getBidSubmitDecision } from '@/lib/bidPayment'
-import { getMyPlacements, getAvailablePlacements } from '@/lib/ranking'
+import { getGlobalBidStatus } from '@/lib/ranking'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { EditCompanyDialog } from '@/features/companies/EditCompanyDialog'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -153,7 +153,6 @@ function isDashboardTab(value: string | null): value is DashboardTab {
 }
 
 function DashboardContent({ company }: { company: Company }) {
-  const categoriesQuery = useCategories()
   const placementsQuery = usePlacements()
   const bidsQuery = useActiveBids()
   const allCompaniesQuery = useAllCompanies()
@@ -170,44 +169,38 @@ function DashboardContent({ company }: { company: Company }) {
   const placeBidMutation = usePlaceBid()
   const createBidPaymentMutation = useCreateBidPayment()
 
-  // Which single placement is currently in-flight — placeBidMutation/
-  // createBidPaymentMutation are each one shared mutation instance reused
-  // across every placement's card, so their own `isPending` is true for
-  // ALL cards at once while either is running. This scopes the loading
-  // state to only the specific card the user actually clicked. No
-  // separate action discriminator needed — placing a bid is the only
-  // mutating action left (no withdrawal).
-  const [pendingPlacementId, setPendingPlacementId] = useState<string | null>(null)
+  // A company has at most one active bid, so there is only ever one
+  // possible in-flight submission at a time — no per-placement key needed
+  // anymore, just whether the one bid action is currently running.
+  const [submittingBid, setSubmittingBid] = useState(false)
 
-  const loading =
-    categoriesQuery.isLoading || placementsQuery.isLoading || bidsQuery.isLoading || allCompaniesQuery.isLoading
-  const errored =
-    categoriesQuery.isError || placementsQuery.isError || bidsQuery.isError || allCompaniesQuery.isError
+  const loading = placementsQuery.isLoading || bidsQuery.isLoading || allCompaniesQuery.isLoading
+  const errored = placementsQuery.isError || bidsQuery.isError || allCompaniesQuery.isError
 
-  if (loading) return <LoadingState label="Loading your placements…" />
-  if (errored) return <ErrorState message="Couldn't load your placements." />
+  if (loading) return <LoadingState label="Loading your bid…" />
+  if (errored) return <ErrorState message="Couldn't load your bid." />
 
-  const categories = categoriesQuery.data ?? []
   const placements = placementsQuery.data ?? []
   const bids = bidsQuery.data ?? []
   const allCompanies = allCompaniesQuery.data ?? []
+  const globalPlacement = getGlobalPlacement(placements)
 
-  // Both pure functions of (bids, placements, company.id) — see
-  // getMyPlacements' own doc comment for why this is deliberately not
-  // memoized against the previous company's result: a switch must always
-  // recompute from scratch, never carry over a stale derived value.
-  const myPlacements = getMyPlacements(bids, placements, company.id)
-  const outbidPlacements = myPlacements.filter((p) => p.outbid)
-  const availablePlacements = getAvailablePlacements(bids, placements, company.id)
+  // Pure function of (bids, globalPlacementId, company.id) — deliberately
+  // not memoized against a previous company's result, so switching
+  // companies always recomputes from scratch (same guarantee the old
+  // per-placement getMyPlacements made, now over a single global bid).
+  const bidStatus = globalPlacement
+    ? getGlobalBidStatus(bids, globalPlacement.id, company.id)
+    : { ranked: [], myBid: undefined, outbid: false, leader: undefined }
 
-  // currentAmount is null for a placement this company isn't bidding on
-  // yet (StartBidCard) — see getBidSubmitDecision for why that also means
-  // "paid". `amount` here is the TARGET bid the user wants, never a charge
-  // amount — the server (create-bid-payment / place_bid) independently
-  // recomputes both the free/paid decision and the exact charge from the
-  // database; getBidSubmitDecision only decides which client path to call
-  // and what to show while that's in flight.
-  function handlePlaceBid(placementId: string, name: string, amount: number, currentAmount: number | null) {
+  // currentAmount is null when this company has no bid yet (StartBidCard)
+  // — see getBidSubmitDecision for why that also means "paid". `amount`
+  // here is the TARGET bid the user wants, never a charge amount — the
+  // server (create-bid-payment / place_bid) independently recomputes both
+  // the free/paid decision and the exact charge from the database;
+  // getBidSubmitDecision only decides which client path to call and what
+  // to show while that's in flight.
+  function handlePlaceBid(placementId: string, amount: number, currentAmount: number | null) {
     const decision = getBidSubmitDecision({ targetAmount: amount, currentActiveAmount: currentAmount })
 
     if (decision.action === 'invalid') {
@@ -227,19 +220,19 @@ function DashboardContent({ company }: { company: Company }) {
       return
     }
 
-    setPendingPlacementId(placementId)
+    setSubmittingBid(true)
 
     if (decision.action === 'free_same') {
       placeBidMutation.mutate(
         { companyId: company.id, placementId, amount },
         {
           onSuccess: () => {
-            toast.success(`Your bid on ${name} stays at ${formatCurrency(amount)}`)
-            setPendingPlacementId(null)
+            toast.success(`Your bid stays at ${formatCurrency(amount)}`)
+            setSubmittingBid(false)
           },
           onError: (err) => {
             toast.error(err instanceof Error ? err.message : 'Could not update your bid.')
-            setPendingPlacementId(null)
+            setSubmittingBid(false)
           },
         },
       )
@@ -251,13 +244,13 @@ function DashboardContent({ company }: { company: Company }) {
       {
         onSuccess: (checkoutUrl) => {
           // Left pending on purpose: the browser is about to navigate away
-          // to Stripe Checkout, so this placement should stay showing its
-          // loading state right up until the redirect actually happens.
+          // to Stripe Checkout, so the control stays showing its loading
+          // state right up until the redirect actually happens.
           window.location.href = checkoutUrl
         },
         onError: (err) => {
           toast.error(err instanceof Error ? err.message : 'Could not start payment.')
-          setPendingPlacementId(null)
+          setSubmittingBid(false)
         },
       },
     )
@@ -269,8 +262,8 @@ function DashboardContent({ company }: { company: Company }) {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="bids">
-            <span className="hidden sm:inline">My Bids &amp; Competitors</span>
-            <span className="sm:hidden">Bids</span>
+            <span className="hidden sm:inline">My Bid &amp; Competitors</span>
+            <span className="sm:hidden">Bid</span>
           </TabsTrigger>
           <TabsTrigger value="deals">Deals</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
@@ -278,104 +271,73 @@ function DashboardContent({ company }: { company: Company }) {
       </div>
 
       <TabsContent value="overview" className="mt-6 flex flex-col gap-6">
-        {myPlacements.length > 0 && (
-          <p className="text-sm text-fg-muted">
-            <span className="font-numeral text-fg">{myPlacements.length}</span> active placement
-            {myPlacements.length === 1 ? '' : 's'} ·{' '}
-            <span className="font-numeral text-sponsored">{myPlacements.length - outbidPlacements.length} leading</span>
-            {outbidPlacements.length > 0 && (
-              <>
-                {' '}
-                · <span className="font-numeral text-danger">{outbidPlacements.length} outbid</span>
-              </>
-            )}
-          </p>
-        )}
-
-        {myPlacements.length === 0 && (
+        {!bidStatus.myBid && (
           <div className="rounded-xl border border-border bg-surface p-6 text-center text-fg-muted">
-            No active placements yet. Head to the "My Bids &amp; Competitors" tab once you're ready to bid on one.
+            No active bid yet. Head to the "My Bid &amp; Competitors" tab when you're ready to start.
           </div>
         )}
 
-        {outbidPlacements.map((p) => (
+        {bidStatus.myBid && bidStatus.outbid && bidStatus.leader && (
           <OutbidBanner
-            key={p.placement.id}
-            placementName={getPlacementDisplayName(p.placement, categories)}
-            leaderName={allCompanies.find((c) => c.id === p.leader.companyId)?.name ?? 'A competitor'}
-            leaderBid={p.leader.amount}
-            myBid={p.myBid.amount}
+            placementName="Your sponsored bid"
+            leaderName={allCompanies.find((c) => c.id === bidStatus.leader!.companyId)?.name ?? 'A competitor'}
+            leaderBid={bidStatus.leader.amount}
+            myBid={bidStatus.myBid.amount}
             onRaiseBid={() => setTab('bids')}
           />
-        ))}
+        )}
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          {myPlacements.map((p) => (
+        {bidStatus.myBid && (
+          <div className="grid gap-4 sm:grid-cols-2">
             <PositionCard
-              key={p.placement.id}
-              placementName={getPlacementDisplayName(p.placement, categories)}
-              rank={p.myBid.rank}
-              totalSlots={p.placement.maxSponsoredSlots}
-              bidAmount={p.myBid.amount}
-              isOutbid={p.outbid}
+              placementName="Your sponsored bid"
+              rank={bidStatus.myBid.rank}
+              totalSlots={bidStatus.ranked.length}
+              bidAmount={bidStatus.myBid.amount}
+              isOutbid={bidStatus.outbid}
             />
-          ))}
-        </div>
+          </div>
+        )}
+
+        {company.categoryIds.length > 0 && (
+          <p className="text-xs text-fg-subtle">
+            {bidStatus.myBid
+              ? 'This one bid is what makes you eligible for sponsored visibility in every category you belong to — raising or lowering it never touches your categories, and changing your categories never touches this bid.'
+              : "You'll be eligible for sponsored visibility in every category you belong to as soon as you place a bid."}
+          </p>
+        )}
       </TabsContent>
 
       <TabsContent value="bids" className="mt-6 flex flex-col gap-8">
-        {myPlacements.length === 0 && (
-          <div className="rounded-xl border border-border bg-surface p-6 text-center text-fg-muted">
-            You're not bidding on any placements yet — start below.
-          </div>
-        )}
-        {myPlacements.map((p) => {
-          const name = getPlacementDisplayName(p.placement, categories)
-          return (
-            <div key={p.placement.id} className="rounded-xl border border-border bg-surface p-5">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="font-semibold text-fg">{name}</h3>
-                <span className="font-numeral text-sm text-fg-muted">
-                  Rank #{p.myBid.rank} of {p.ranked.length}
-                </span>
-              </div>
-              <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-                <CompetitorBidTable placementId={p.placement.id} myCompanyId={company.id} />
-                <BidAdjustControl
-                  currentAmount={p.myBid.amount}
-                  leaderAmount={p.leader.amount}
-                  submitting={pendingPlacementId === p.placement.id}
-                  onSubmit={(amount) => handlePlaceBid(p.placement.id, name, amount, p.myBid.amount)}
-                />
-              </div>
+        {bidStatus.myBid ? (
+          <div className="rounded-xl border border-border bg-surface p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="font-semibold text-fg">Your sponsored bid</h3>
+              <span className="font-numeral text-sm text-fg-muted">
+                Rank #{bidStatus.myBid.rank} of {bidStatus.ranked.length}
+              </span>
             </div>
-          )
-        })}
-
-        {availablePlacements.length > 0 && (
-          <div>
-            <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-fg-muted">
-              Available placements
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {availablePlacements.map(({ placement, ranked, leader }) => {
-                const name = getPlacementDisplayName(placement, categories)
-                const leaderCompany = leader ? allCompanies.find((c) => c.id === leader.companyId) : undefined
-                return (
-                  <StartBidCard
-                    key={placement.id}
-                    placementName={name}
-                    leaderName={leaderCompany?.name ?? null}
-                    leaderAmount={leader?.amount ?? 0}
-                    activeBidderCount={ranked.length}
-                    maxSponsoredSlots={placement.maxSponsoredSlots}
-                    submitting={pendingPlacementId === placement.id}
-                    onSubmit={(amount) => handlePlaceBid(placement.id, name, amount, null)}
-                  />
-                )
-              })}
+            <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+              <CompetitorBidTable placementId={globalPlacement!.id} myCompanyId={company.id} />
+              <BidAdjustControl
+                currentAmount={bidStatus.myBid.amount}
+                leaderAmount={bidStatus.leader?.amount ?? bidStatus.myBid.amount}
+                submitting={submittingBid}
+                onSubmit={(amount) => handlePlaceBid(globalPlacement!.id, amount, bidStatus.myBid!.amount)}
+              />
             </div>
           </div>
+        ) : globalPlacement ? (
+          <StartBidCard
+            placementName="Start your sponsored bid"
+            leaderName={bidStatus.leader ? allCompanies.find((c) => c.id === bidStatus.leader!.companyId)?.name ?? null : null}
+            leaderAmount={bidStatus.leader?.amount ?? 0}
+            activeBidderCount={bidStatus.ranked.length}
+            submitting={submittingBid}
+            onSubmit={(amount) => handlePlaceBid(globalPlacement.id, amount, null)}
+          />
+        ) : (
+          <ErrorState message="Sponsored bidding isn't set up yet." />
         )}
       </TabsContent>
 
