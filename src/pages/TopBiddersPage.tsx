@@ -5,6 +5,7 @@ import { getGlobalPlacement } from '@/lib/supabase/queries'
 import { getTopBidders } from '@/lib/ranking'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { Select } from '@/components/ui/select'
 import { LoadingState, ErrorState, EmptyState } from '@/components/shared/QueryStates'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
@@ -91,7 +92,10 @@ export function TopBiddersPage() {
                 <span className="font-numeral w-6 shrink-0 text-center text-lg text-sponsored">{i + 1}</span>
                 <Link to={`/companies/${entry.company.slug}`} className="flex min-w-0 flex-1 items-center gap-3 hover:opacity-90">
                   <CompanyAvatar initials={entry.company.initials} color={entry.company.logoColor} logoUrl={entry.company.logoUrl} />
-                  <span className="truncate text-sm font-semibold text-fg">{entry.company.name}</span>
+                  <span className="flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold text-fg">
+                    <span className="truncate">{entry.company.name}</span>
+                    {entry.company.isVerified && <VerifiedBadge size="sm" />}
+                  </span>
                 </Link>
                 {entryCategories.length > 0 && (
                   <div className="hidden shrink-0 flex-wrap items-center gap-x-2 sm:flex">

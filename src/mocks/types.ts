@@ -32,6 +32,8 @@ export interface Company {
   logoUrl?: string | null
   /** Storage path backing logoUrl, needed to clean up the old file when replacing a logo. Mock companies never set this. */
   logoPath?: string | null
+  /** Repcastr has confirmed a real representative controls this profile — see company_verifications. Never true just because the company was created, has a bid, or was paid for. Optional/absent means unverified, same as `logoUrl`/`logoPath` above — mock companies never set this. */
+  isVerified?: boolean
 }
 
 export interface Placement {

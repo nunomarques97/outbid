@@ -5,6 +5,7 @@ import { CompanyAvatar } from '@/components/ui/avatar'
 import { VoteButton } from '@/components/shared/VoteButton'
 import { SaveButton } from '@/components/shared/SaveButton'
 import { CompanyRatingInline } from '@/features/reviews/CompanyRatingInline'
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 
 interface OrganicEntryCardProps {
   company: Company
@@ -24,7 +25,10 @@ export function OrganicEntryCard({ company, rank, ratingSummary, categoryNames }
       <Link to={`/companies/${company.slug}`} className="flex min-w-0 flex-1 items-center gap-4">
         <CompanyAvatar initials={company.initials} color={company.logoColor} logoUrl={company.logoUrl} size="lg" />
         <div className="min-w-0">
-          <p className="truncate font-semibold text-fg">{company.name}</p>
+          <p className="flex items-center gap-1.5 truncate font-semibold text-fg">
+            {company.name}
+            {company.isVerified && <VerifiedBadge size="sm" />}
+          </p>
           <p className="truncate text-sm text-fg-muted">{company.tagline}</p>
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <CompanyRatingInline summary={ratingSummary} />

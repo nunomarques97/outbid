@@ -8,6 +8,7 @@ import { useMyWatchedDealIds, useWatchDeal, useUnwatchDeal } from '@/features/de
 import { getDealCtaState } from '@/lib/dealState'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { CompanyWebsiteLink } from '@/components/shared/CompanyWebsiteLink'
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { ReportButton } from '@/features/reports/ReportButton'
 import { Button } from '@/components/ui/button'
 import { formatCompactNumber, cn } from '@/lib/utils'
@@ -73,7 +74,10 @@ export function DealCard({ deal, company }: { deal: Deal; company: Company }) {
         <Link to={`/companies/${company.slug}`} className="flex min-w-0 items-center gap-3 hover:opacity-90">
           <CompanyAvatar initials={company.initials} color={company.logoColor} logoUrl={company.logoUrl} />
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-fg hover:underline">{company.name}</p>
+            <p className="flex items-center gap-1.5 truncate text-sm font-medium text-fg hover:underline">
+              {company.name}
+              {company.isVerified && <VerifiedBadge size="sm" />}
+            </p>
             <p className="truncate text-xs text-fg-subtle">
               {category?.name} · {formatCompactNumber(deal.claimCount)} watching
             </p>

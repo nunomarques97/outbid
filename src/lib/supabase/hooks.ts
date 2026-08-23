@@ -19,6 +19,8 @@ import {
   getReviewsByUserPaginated,
   searchProfiles,
   getReviewAuthorInfoByIds,
+  getCompanyVerification,
+  getMyLatestClaimForCompany,
 } from './queries'
 
 /**
@@ -193,5 +195,28 @@ export function useReviewAuthors(userIds: string[]) {
     queryKey: ['reviewAuthors', key],
     queryFn: () => getReviewAuthorInfoByIds(userIds),
     enabled: userIds.length > 0,
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Company verification + claims (Phase 39)
+// ---------------------------------------------------------------------------
+
+/** The full verification record for one company — see queries.getCompanyVerification for why this is separate from the boolean baked into every Company object. */
+export function useCompanyVerification(companyId: string | undefined) {
+  return useQuery({
+    queryKey: ['companyVerification', companyId],
+    queryFn: () => getCompanyVerification(companyId!),
+    enabled: Boolean(companyId),
+  })
+}
+
+/** The signed-in user's own claim on this company, if any — disabled (no request) when signed out, same gating as useMyCompanies. */
+export function useMyLatestClaim(companyId: string | undefined) {
+  const { user, isConfigured } = useAuth()
+  return useQuery({
+    queryKey: ['myClaim', companyId, user?.id],
+    queryFn: () => getMyLatestClaimForCompany(companyId!, user!.id),
+    enabled: isConfigured && Boolean(user) && Boolean(companyId),
   })
 }

@@ -13,6 +13,7 @@ import { CompanyAvatar } from '@/components/ui/avatar'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import { CompanyRatingInline } from '@/features/reviews/CompanyRatingInline'
 import { SaveButton } from '@/components/shared/SaveButton'
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { Input } from '@/components/ui/input'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 
@@ -181,7 +182,10 @@ export function SearchPage() {
               <Link to={`/companies/${c.slug}`} className="flex min-w-0 flex-1 items-center gap-3">
                 <CompanyAvatar initials={c.initials} color={c.logoColor} logoUrl={c.logoUrl} size="sm" />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-fg">{c.name}</p>
+                  <p className="flex items-center gap-1.5 truncate text-sm font-medium text-fg">
+                    {c.name}
+                    {c.isVerified && <VerifiedBadge size="sm" />}
+                  </p>
                   <p className="truncate text-xs text-fg-muted">{c.tagline}</p>
                   <CompanyRatingInline summary={ratingSummariesQuery.data?.get(c.id)} className="mt-0.5" />
                 </div>

@@ -7,6 +7,7 @@ import { getTopBidders, splitTopBiddersForHomepage, type TopBidderEntry } from '
 import type { Category } from '@/mocks/types'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 import { formatCurrency, cn } from '@/lib/utils'
 
@@ -119,7 +120,10 @@ function BidderCard({
       </div>
       <Link to={`/companies/${entry.company.slug}`} className="flex items-center gap-2.5 hover:opacity-90">
         <CompanyAvatar initials={entry.company.initials} color={entry.company.logoColor} logoUrl={entry.company.logoUrl} size="sm" />
-        <span className="truncate text-sm font-semibold text-fg">{entry.company.name}</span>
+        <span className="flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold text-fg">
+          <span className="truncate">{entry.company.name}</span>
+          {entry.company.isVerified && <VerifiedBadge size="sm" />}
+        </span>
       </Link>
       {entryCategories.length > 0 && (
         <div className="-mt-1.5 flex flex-wrap gap-x-2 gap-y-0.5">

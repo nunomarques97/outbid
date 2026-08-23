@@ -470,3 +470,38 @@ export async function createReport(
   })
   if (error) throw error
 }
+
+// ---------------------------------------------------------------------------
+// Company claims. Only the 'manual' method is exposed here — 'business_email'
+// exists in the schema/enum for a future phase, but this app has no
+// transactional email provider wired up, so offering it now would mean
+// faking an "email verified" state with nothing behind it. See the Phase 39
+// report for why that path was deliberately left unbuilt rather than
+// simulated.
+// ---------------------------------------------------------------------------
+
+/**
+ * Submits a claim via the create_company_claim RPC — the only write path
+ * onto public.company_claims. All authorization (one-company-per-user,
+ * "company already has a representative", duplicate-pending rejection)
+ * happens server-side inside the RPC; this just forwards the call and lets
+ * its error surface as-is, same division of responsibility as createReport.
+ * The claim itself never verifies the company — see approve_company_claim,
+ * which is service_role-only and invoked by the operator directly, never
+ * from this client.
+ */
+export async function createCompanyClaim(input: {
+  companyId: string
+  reason: string
+  contactEmail: string | null
+  evidence: string | null
+}): Promise<void> {
+  const { error } = await supabase.rpc('create_company_claim', {
+    p_company_id: input.companyId,
+    p_method: 'manual',
+    p_reason: input.reason,
+    p_contact_email: input.contactEmail,
+    p_evidence: input.evidence,
+  })
+  if (error) throw error
+}

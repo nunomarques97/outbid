@@ -3,6 +3,7 @@ import type { Company } from '@/mocks/types'
 import type { CompanyRatingSummary } from '@/lib/supabase/queries'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { CompanyRatingInline } from '@/features/reviews/CompanyRatingInline'
 import { formatCurrency, cn } from '@/lib/utils'
 
@@ -27,6 +28,7 @@ export function SponsoredEntryCard({ company, rank, bidAmount, ratingSummary }: 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <SponsoredBadge />
+          {company.isVerified && <VerifiedBadge size="sm" />}
         </div>
         <p className="mt-1 truncate font-semibold text-fg">{company.name}</p>
         <p className="truncate text-sm text-fg-muted">{company.tagline}</p>

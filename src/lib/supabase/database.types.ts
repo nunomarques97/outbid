@@ -30,6 +30,8 @@ export type NotificationType = 'outbid' | 'bid_confirmed'
 export type BattleSide = 'a' | 'b'
 export type BillingStatus = 'inactive' | 'active'
 export type BidPaymentStatus = 'pending' | 'succeeded' | 'cancelled'
+export type VerificationMethod = 'business_email' | 'manual'
+export type ClaimStatus = 'pending' | 'approved' | 'rejected'
 
 export interface Database {
   public: {
@@ -454,6 +456,38 @@ export interface Database {
         Update: Partial<{ user_id: string; category_id: string; created_at: string }>
         Relationships: []
       }
+      company_verifications: {
+        Row: {
+          company_id: string
+          is_verified: boolean
+          verified_at: string | null
+          verification_method: VerificationMethod | null
+          verified_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: { company_id: string }
+        Update: Record<string, never>
+        Relationships: []
+      }
+      company_claims: {
+        Row: {
+          id: string
+          company_id: string
+          claimant_user_id: string
+          method: VerificationMethod
+          reason: string
+          contact_email: string | null
+          evidence: string | null
+          status: ClaimStatus
+          created_at: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+        }
+        Insert: Record<string, never>
+        Update: Record<string, never>
+        Relationships: []
+      }
     }
     Views: {
       company_rating_summary: {
@@ -505,6 +539,16 @@ export interface Database {
           reviewed_at: string | null
           reviewed_by: string | null
         }
+      }
+      create_company_claim: {
+        Args: {
+          p_company_id: string
+          p_method: VerificationMethod
+          p_reason: string
+          p_contact_email: string | null
+          p_evidence: string | null
+        }
+        Returns: Database['public']['Tables']['company_claims']['Row']
       }
     }
     Enums: Record<string, never>

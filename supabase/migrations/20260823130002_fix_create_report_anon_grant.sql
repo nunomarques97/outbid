@@ -1,0 +1,11 @@
+-- Repcastr Phase 39 security audit finding (Part 10/11): create_report()
+-- (Phase 36) was intended as authenticated-only — its own migration did
+-- `revoke all ... from public; grant execute ... to authenticated` — but
+-- the same Supabase default-privilege behavior documented in
+-- 20260823130001_fix_claim_function_grants.sql applies here too: `anon`
+-- still had an explicit EXECUTE grant, confirmed live. The function's own
+-- `auth.uid() is null` check already rejects an anonymous call today, so
+-- this was not an exploitable bypass — but the grant should match the
+-- intended authenticated-only surface, not rely solely on the function
+-- body to reject anon calls.
+revoke execute on function public.create_report(text, uuid, text, text) from anon;

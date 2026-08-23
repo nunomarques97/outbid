@@ -18,12 +18,14 @@ import { CompanyAvatar } from '@/components/ui/avatar'
 import { VoteButton } from '@/components/shared/VoteButton'
 import { SaveButton } from '@/components/shared/SaveButton'
 import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { DealCard } from '@/components/shared/DealCard'
 import { CompanyWebsiteLink } from '@/components/shared/CompanyWebsiteLink'
 import { OrganicEntryCard } from '@/components/leaderboard/OrganicEntryCard'
 import { CompanyRatingBadge } from '@/features/reviews/CompanyRatingBadge'
 import { CompanyReviewsSection } from '@/features/reviews/CompanyReviewsSection'
 import { ReportButton } from '@/features/reports/ReportButton'
+import { ClaimCompanyButton } from '@/features/claims/ClaimCompanyButton'
 import { buttonVariants } from '@/components/ui/button'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
@@ -131,11 +133,13 @@ function CompanyProfileContent({ company }: { company: Company }) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-fg sm:text-3xl">{company.name}</h1>
+            {company.isVerified && <VerifiedBadge />}
             {sponsorships.length > 0 && <SponsoredBadge />}
           </div>
           <p className="mt-1 text-fg-muted">{company.tagline}</p>
-          <div className="mt-2">
+          <div className="mt-2 flex flex-wrap items-center gap-3">
             <CompanyRatingBadge companyId={company.id} />
+            {!company.isVerified && <ClaimCompanyButton companyId={company.id} companyName={company.name} />}
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
             {companyCategories.map((c) => (

@@ -5,6 +5,7 @@ import { getGlobalPlacement } from '@/lib/supabase/queries'
 import { getCategoryRanking, getTopCategoriesByBidTotal, CATEGORY_SPONSORED_SLOTS } from '@/lib/ranking'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { CompanyRatingInline } from '@/features/reviews/CompanyRatingInline'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 
@@ -78,6 +79,7 @@ export function RankingsPreview() {
                   >
                     <CompanyAvatar initials={topSponsoredCompany.initials} color={topSponsoredCompany.logoColor} logoUrl={topSponsoredCompany.logoUrl} size="sm" />
                     <span className="flex-1 truncate text-sm text-fg group-hover:underline">{topSponsoredCompany.name}</span>
+                    {topSponsoredCompany.isVerified && <VerifiedBadge size="sm" />}
                     <CompanyRatingInline summary={ratingSummariesQuery.data?.get(topSponsoredCompany.id)} className="shrink-0" />
                     <SponsoredBadge size="sm" />
                   </Link>
@@ -91,6 +93,7 @@ export function RankingsPreview() {
                     <span className="font-numeral w-3 text-center text-xs text-organic">{i + 1}</span>
                     <CompanyAvatar initials={company.initials} color={company.logoColor} logoUrl={company.logoUrl} size="sm" />
                     <span className="flex-1 truncate text-sm text-fg-muted group-hover:text-fg">{company.name}</span>
+                    {company.isVerified && <VerifiedBadge size="sm" />}
                     <CompanyRatingInline summary={ratingSummariesQuery.data?.get(company.id)} className="shrink-0" />
                   </Link>
                 ))}

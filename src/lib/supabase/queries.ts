@@ -30,7 +30,7 @@ function toCategory(row: CategoryRow): Category {
   return { id: row.id, slug: row.slug, name: row.name, icon: row.icon, description: row.description, isArchived: row.is_archived }
 }
 
-function toCompany(row: CompanyRow, categoryIds: string[], voteCount: number): Company {
+function toCompany(row: CompanyRow, categoryIds: string[], voteCount: number, isVerified: boolean): Company {
   return {
     id: row.id,
     slug: row.slug,
@@ -50,7 +50,82 @@ function toCompany(row: CompanyRow, categoryIds: string[], voteCount: number): C
     tags: row.tags ?? [],
     logoUrl: getCompanyLogoUrl(row.logo_path),
     logoPath: row.logo_path,
+    isVerified,
   }
+}
+
+/** Mirrors getCompanyVoteCounts's shape exactly — a lightweight lookup, not a second full fetch of company_verifications' other columns (verified_at/method/by are only needed on the one profile page that shows them, see getCompanyVerification below). */
+async function getVerifiedCompanyIds(companyIds: string[]): Promise<Set<string>> {
+  if (companyIds.length === 0) return new Set()
+  const { data, error } = await supabase
+    .from('company_verifications')
+    .select('company_id')
+    .eq('is_verified', true)
+    .in('company_id', companyIds)
+  if (error) throw error
+  return new Set(data.map((row) => row.company_id))
+}
+
+export interface CompanyVerification {
+  companyId: string
+  isVerified: boolean
+  verifiedAt: string | null
+  verificationMethod: Database['public']['Tables']['company_verifications']['Row']['verification_method']
+  verifiedBy: string | null
+}
+
+/**
+ * The full verification record for one company — used only by the profile
+ * page's claim/verification section (rank surfaces only need the boolean,
+ * see getVerifiedCompanyIds above). handle_new_company_verification always
+ * creates this row alongside the company, so a missing row would be a real
+ * bug, not a normal "not verified" state — still handled defensively with
+ * maybeSingle rather than .single() so a page render never throws over it.
+ */
+export async function getCompanyVerification(companyId: string): Promise<CompanyVerification | null> {
+  const { data, error } = await supabase
+    .from('company_verifications')
+    .select('*')
+    .eq('company_id', companyId)
+    .maybeSingle()
+  if (error) throw error
+  if (!data) return null
+  return {
+    companyId: data.company_id,
+    isVerified: data.is_verified,
+    verifiedAt: data.verified_at,
+    verificationMethod: data.verification_method,
+    verifiedBy: data.verified_by,
+  }
+}
+
+export interface CompanyClaim {
+  id: string
+  companyId: string
+  status: Database['public']['Tables']['company_claims']['Row']['status']
+  createdAt: string
+}
+
+/**
+ * The signed-in user's own most recent claim on this company, if any — RLS
+ * on company_claims already restricts this to rows where
+ * claimant_user_id = auth.uid(), so this can never see anyone else's claim.
+ * Used only to adjust the claim CTA (e.g. "Claim pending review" instead of
+ * re-showing the form) — create_company_claim's own duplicate-pending
+ * rejection is the real enforcement, this is just UX.
+ */
+export async function getMyLatestClaimForCompany(companyId: string, userId: string): Promise<CompanyClaim | null> {
+  const { data, error } = await supabase
+    .from('company_claims')
+    .select('id, company_id, status, created_at')
+    .eq('company_id', companyId)
+    .eq('claimant_user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) throw error
+  if (!data) return null
+  return { id: data.id, companyId: data.company_id, status: data.status, createdAt: data.created_at }
 }
 
 /** company-logos is a public bucket — getPublicUrl is a pure client-side URL construction, no request involved. */
@@ -156,23 +231,25 @@ export async function getCompanyBySlug(slug: string): Promise<Company | null> {
   if (error) throw error
   if (!row) return null
 
-  const [{ data: links, error: linksError }, votes] = await Promise.all([
+  const [{ data: links, error: linksError }, votes, verifiedIds] = await Promise.all([
     supabase.from('company_categories').select('category_id').eq('company_id', row.id),
     getCompanyVoteCounts([row.id]),
+    getVerifiedCompanyIds([row.id]),
   ])
   if (linksError) throw linksError
 
-  return toCompany(row, links.map((l) => l.category_id), votes.get(row.id) ?? 0)
+  return toCompany(row, links.map((l) => l.category_id), votes.get(row.id) ?? 0, verifiedIds.has(row.id))
 }
 
 /** Shared by every "companies matching some id list" query below, so the join+vote-count assembly lives in one place. */
 async function getCompaniesByIds(ids: string[]): Promise<Company[]> {
   if (ids.length === 0) return []
 
-  const [{ data: companies, error: companiesError }, { data: allLinks, error: allLinksError }, votes] = await Promise.all([
+  const [{ data: companies, error: companiesError }, { data: allLinks, error: allLinksError }, votes, verifiedIds] = await Promise.all([
     supabase.from('companies').select('*').in('id', ids),
     supabase.from('company_categories').select('company_id, category_id').in('company_id', ids),
     getCompanyVoteCounts(ids),
+    getVerifiedCompanyIds(ids),
   ])
   if (companiesError) throw companiesError
   if (allLinksError) throw allLinksError
@@ -184,7 +261,9 @@ async function getCompaniesByIds(ids: string[]): Promise<Company[]> {
     categoryIdsByCompany.set(l.company_id, list)
   }
 
-  return companies.map((row) => toCompany(row, categoryIdsByCompany.get(row.id) ?? [], votes.get(row.id) ?? 0))
+  return companies.map((row) =>
+    toCompany(row, categoryIdsByCompany.get(row.id) ?? [], votes.get(row.id) ?? 0, verifiedIds.has(row.id))
+  )
 }
 
 export async function getCompaniesByCategory(categoryId: string): Promise<Company[]> {
@@ -215,7 +294,8 @@ export async function getAllCompanies(): Promise<Company[]> {
   if (companiesError) throw companiesError
   if (linksError) throw linksError
 
-  const votes = await getCompanyVoteCounts(companies.map((c) => c.id))
+  const ids = companies.map((c) => c.id)
+  const [votes, verifiedIds] = await Promise.all([getCompanyVoteCounts(ids), getVerifiedCompanyIds(ids)])
 
   const categoryIdsByCompany = new Map<string, string[]>()
   for (const l of links) {
@@ -224,7 +304,9 @@ export async function getAllCompanies(): Promise<Company[]> {
     categoryIdsByCompany.set(l.company_id, list)
   }
 
-  return companies.map((row) => toCompany(row, categoryIdsByCompany.get(row.id) ?? [], votes.get(row.id) ?? 0))
+  return companies.map((row) =>
+    toCompany(row, categoryIdsByCompany.get(row.id) ?? [], votes.get(row.id) ?? 0, verifiedIds.has(row.id))
+  )
 }
 
 // ---------------------------------------------------------------------------
