@@ -24,9 +24,11 @@
  * leave them (unowned, unverified) for a freshly inserted company.
  */
 
-import { writeFileSync } from 'fs'
+import { writeFileSync, mkdtempSync, rmSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
+import { tmpdir } from 'os'
+import { execFileSync } from 'child_process'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -44,10 +46,10 @@ const COMPANIES = [
   { name: 'BMW', website: 'bmw.com', founded: 1916, categories: ['automotive'], tagline: 'German luxury vehicle and motorcycle manufacturer', description: 'Produces premium automobiles and motorcycles, headquartered in Munich, Germany.' },
 
   // Beauty & Personal Care
-  { name: "L'Oréal", website: 'loreal.com', founded: 1909, categories: ['beauty-personal-care'], tagline: 'French multinational cosmetics company', description: 'One of the world\'s largest cosmetics companies, producing skincare, haircare, makeup, and fragrance.' },
-  { name: 'Sephora', website: 'sephora.com', founded: 1969, categories: ['beauty-personal-care', 'shopping'], tagline: 'Multinational beauty retailer', description: 'A retail chain selling cosmetics, skincare, and fragrance from hundreds of brands.' },
-  { name: 'The Body Shop', website: 'thebodyshop.com', founded: 1976, categories: ['beauty-personal-care'], tagline: 'British cosmetics and skincare retailer', description: 'Known for naturally-inspired, ethically-sourced beauty and personal care products.' },
-  { name: 'Estée Lauder', website: 'esteelauder.com', founded: 1946, categories: ['beauty-personal-care'], tagline: 'American skincare, makeup, and fragrance company', description: 'A global manufacturer and marketer of prestige skincare, makeup, and fragrance products.' },
+  { name: "L'Oréal", website: 'loreal.com', founded: 1909, categories: ['shopping'], tagline: 'French multinational cosmetics company', description: 'One of the world\'s largest cosmetics companies, producing skincare, haircare, makeup, and fragrance.' },
+  { name: 'Sephora', website: 'sephora.com', founded: 1969, categories: ['shopping'], tagline: 'Multinational beauty retailer', description: 'A retail chain selling cosmetics, skincare, and fragrance from hundreds of brands.' },
+  { name: 'The Body Shop', website: 'thebodyshop.com', founded: 1976, categories: ['shopping'], tagline: 'British cosmetics and skincare retailer', description: 'Known for naturally-inspired, ethically-sourced beauty and personal care products.' },
+  { name: 'Estée Lauder', website: 'esteelauder.com', founded: 1946, categories: ['shopping'], tagline: 'American skincare, makeup, and fragrance company', description: 'A global manufacturer and marketer of prestige skincare, makeup, and fragrance products.' },
 
   // Business & Professional Services
   { name: 'Deloitte', website: 'deloitte.com', founded: 1845, categories: ['business-professional-services'], tagline: 'Multinational professional services network', description: 'Provides audit, consulting, tax, and advisory services to organizations worldwide.' },
@@ -56,32 +58,32 @@ const COMPANIES = [
   { name: 'ADP', website: 'adp.com', founded: 1949, categories: ['business-professional-services'], tagline: 'Human capital management and payroll services company', description: 'Provides payroll processing, HR, and workforce management services to businesses.' },
 
   // Coffee
-  { name: 'Starbucks', website: 'starbucks.com', founded: 1971, categories: ['coffee'], tagline: 'American multinational coffeehouse chain', description: 'Operates coffeehouses worldwide, roasting and selling coffee beans and beverages.' },
-  { name: "Dunkin'", website: 'dunkindonuts.com', founded: 1950, categories: ['coffee', 'food-dining'], tagline: 'American coffee and baked goods chain', description: 'A quick-service chain known for coffee, donuts, and breakfast sandwiches.' },
-  { name: "Peet's Coffee", website: 'peets.com', founded: 1966, categories: ['coffee'], tagline: 'American specialty coffee roaster and retailer', description: 'Founded in Berkeley, California, known for dark-roasted specialty coffee.' },
-  { name: 'Costa Coffee', website: 'costacoffee.com', founded: 1971, categories: ['coffee'], tagline: 'British multinational coffeehouse chain', description: 'A coffeehouse chain founded in London, with locations across many countries.' },
-  { name: 'Blue Bottle Coffee', website: 'bluebottlecoffee.com', founded: 2002, categories: ['coffee'], tagline: 'American specialty coffee roaster', description: 'A specialty coffee company known for single-origin beans and cafes worldwide.' },
+  { name: 'Starbucks', website: 'starbucks.com', founded: 1971, categories: ['food-dining'], tagline: 'American multinational coffeehouse chain', description: 'Operates coffeehouses worldwide, roasting and selling coffee beans and beverages.' },
+  { name: "Dunkin'", website: 'dunkindonuts.com', founded: 1950, categories: ['food-dining'], tagline: 'American coffee and baked goods chain', description: 'A quick-service chain known for coffee, donuts, and breakfast sandwiches.' },
+  { name: "Peet's Coffee", website: 'peets.com', founded: 1966, categories: ['food-dining'], tagline: 'American specialty coffee roaster and retailer', description: 'Founded in Berkeley, California, known for dark-roasted specialty coffee.' },
+  { name: 'Costa Coffee', website: 'costacoffee.com', founded: 1971, categories: ['food-dining'], tagline: 'British multinational coffeehouse chain', description: 'A coffeehouse chain founded in London, with locations across many countries.' },
+  { name: 'Blue Bottle Coffee', website: 'bluebottlecoffee.com', founded: 2002, categories: ['food-dining'], tagline: 'American specialty coffee roaster', description: 'A specialty coffee company known for single-origin beans and cafes worldwide.' },
 
   // Education
-  { name: 'Coursera', website: 'coursera.org', founded: 2012, categories: ['education', 'software'], tagline: 'Online learning platform', description: 'Partners with universities and companies to offer online courses, certificates, and degrees.' },
-  { name: 'Khan Academy', website: 'khanacademy.org', founded: 2008, categories: ['education', 'nonprofit-community'], tagline: 'Nonprofit educational organization', description: 'Provides free online courses, lessons, and practice exercises across many subjects.' },
-  { name: 'Duolingo', website: 'duolingo.com', founded: 2011, categories: ['education', 'software'], tagline: 'Language-learning app and platform', description: 'Offers free, gamified language courses through a mobile app and website.' },
+  { name: 'Coursera', website: 'coursera.org', founded: 2012, categories: ['education', 'technology'], tagline: 'Online learning platform', description: 'Partners with universities and companies to offer online courses, certificates, and degrees.' },
+  { name: 'Khan Academy', website: 'khanacademy.org', founded: 2008, categories: ['education', 'business-professional-services'], tagline: 'Nonprofit educational organization', description: 'Provides free online courses, lessons, and practice exercises across many subjects.' },
+  { name: 'Duolingo', website: 'duolingo.com', founded: 2011, categories: ['education', 'technology'], tagline: 'Language-learning app and platform', description: 'Offers free, gamified language courses through a mobile app and website.' },
   { name: 'Udemy', website: 'udemy.com', founded: 2010, categories: ['education'], tagline: 'Online learning marketplace', description: 'An online marketplace where instructors create courses on a wide range of skills.' },
   { name: 'MasterClass', website: 'masterclass.com', founded: 2015, categories: ['education'], tagline: 'Online education subscription platform', description: 'Offers video lessons taught by well-known instructors across creative and professional fields.' },
 
   // Entertainment
   { name: 'Netflix', website: 'netflix.com', founded: 1997, categories: ['entertainment'], tagline: 'Streaming entertainment service', description: 'A subscription streaming service offering films, series, and documentaries worldwide.' },
-  { name: 'The Walt Disney Company', website: 'disney.com', founded: 1923, categories: ['entertainment', 'kids-family'], tagline: 'American mass media and entertainment conglomerate', description: 'Produces films, television, and operates theme parks and streaming services.' },
+  { name: 'The Walt Disney Company', website: 'disney.com', founded: 1923, categories: ['entertainment', 'home-living'], tagline: 'American mass media and entertainment conglomerate', description: 'Produces films, television, and operates theme parks and streaming services.' },
   { name: 'Spotify', website: 'spotify.com', founded: 2006, categories: ['entertainment'], tagline: 'Audio streaming and media service', description: 'A digital music, podcast, and audio streaming platform available worldwide.' },
   { name: 'Warner Bros.', website: 'warnerbros.com', founded: 1923, categories: ['entertainment'], tagline: 'American film and entertainment studio', description: 'A major film and television studio producing movies, series, and animation.' },
   { name: 'Universal Pictures', website: 'universalpictures.com', founded: 1912, categories: ['entertainment'], tagline: 'American film production and distribution studio', description: 'One of the oldest film studios in the world, producing and distributing motion pictures.' },
 
   // Fashion
-  { name: 'Nike', website: 'nike.com', founded: 1964, categories: ['fashion', 'sports'], tagline: 'American athletic footwear and apparel company', description: 'Designs, manufactures, and markets athletic footwear, apparel, and equipment worldwide.' },
-  { name: 'Zara', website: 'zara.com', founded: 1975, categories: ['fashion'], tagline: 'Spanish fast-fashion clothing retailer', description: 'A clothing and accessories retailer, part of the Inditex group, with stores worldwide.' },
-  { name: 'H&M', website: 'hm.com', founded: 1947, categories: ['fashion'], tagline: 'Swedish multinational clothing retailer', description: 'Sells clothing and accessories for men, women, teenagers, and children globally.' },
-  { name: "Levi's", website: 'levi.com', founded: 1853, categories: ['fashion'], tagline: 'American clothing company known for denim', description: 'Known for inventing blue jeans, now selling denim and casual apparel worldwide.' },
-  { name: 'Adidas', website: 'adidas.com', founded: 1949, categories: ['fashion', 'sports'], tagline: 'German multinational sportswear manufacturer', description: 'Designs and manufactures athletic shoes, apparel, and accessories worldwide.' },
+  { name: 'Nike', website: 'nike.com', founded: 1964, categories: ['shopping', 'entertainment'], tagline: 'American athletic footwear and apparel company', description: 'Designs, manufactures, and markets athletic footwear, apparel, and equipment worldwide.' },
+  { name: 'Zara', website: 'zara.com', founded: 1975, categories: ['shopping'], tagline: 'Spanish fast-fashion clothing retailer', description: 'A clothing and accessories retailer, part of the Inditex group, with stores worldwide.' },
+  { name: 'H&M', website: 'hm.com', founded: 1947, categories: ['shopping'], tagline: 'Swedish multinational clothing retailer', description: 'Sells clothing and accessories for men, women, teenagers, and children globally.' },
+  { name: "Levi's", website: 'levi.com', founded: 1853, categories: ['shopping'], tagline: 'American clothing company known for denim', description: 'Known for inventing blue jeans, now selling denim and casual apparel worldwide.' },
+  { name: 'Adidas', website: 'adidas.com', founded: 1949, categories: ['shopping', 'entertainment'], tagline: 'German multinational sportswear manufacturer', description: 'Designs and manufactures athletic shoes, apparel, and accessories worldwide.' },
 
   // Finance
   { name: 'Visa', website: 'visa.com', founded: 1958, categories: ['finance'], tagline: 'Multinational payments technology company', description: 'Operates one of the world\'s largest electronic payment networks.' },
@@ -98,17 +100,17 @@ const COMPANIES = [
   { name: 'KFC', website: 'kfc.com', founded: 1930, categories: ['food-dining'], tagline: 'American fast food chain specializing in fried chicken', description: 'A fried chicken fast food chain with restaurants in over 140 countries.' },
 
   // Health
-  { name: 'CVS Health', website: 'cvshealth.com', founded: 1963, categories: ['health'], tagline: 'American healthcare and pharmacy company', description: 'Operates pharmacies, health clinics, and health insurance services across the US.' },
-  { name: 'Johnson & Johnson', website: 'jnj.com', founded: 1886, categories: ['health'], tagline: 'American multinational healthcare company', description: 'Develops pharmaceuticals, medical devices, and consumer health products.' },
-  { name: 'Pfizer', website: 'pfizer.com', founded: 1849, categories: ['health'], tagline: 'American multinational pharmaceutical company', description: 'Researches, develops, and manufactures medicines and vaccines.' },
-  { name: 'Mayo Clinic', website: 'mayoclinic.org', founded: 1889, categories: ['health', 'nonprofit-community'], tagline: 'Nonprofit academic medical center', description: 'A nonprofit medical practice and research group focused on complex patient care.' },
+  { name: 'CVS Health', website: 'cvshealth.com', founded: 1963, categories: ['health-fitness'], tagline: 'American healthcare and pharmacy company', description: 'Operates pharmacies, health clinics, and health insurance services across the US.' },
+  { name: 'Johnson & Johnson', website: 'jnj.com', founded: 1886, categories: ['health-fitness'], tagline: 'American multinational healthcare company', description: 'Develops pharmaceuticals, medical devices, and consumer health products.' },
+  { name: 'Pfizer', website: 'pfizer.com', founded: 1849, categories: ['health-fitness'], tagline: 'American multinational pharmaceutical company', description: 'Researches, develops, and manufactures medicines and vaccines.' },
+  { name: 'Mayo Clinic', website: 'mayoclinic.org', founded: 1889, categories: ['health-fitness', 'business-professional-services'], tagline: 'Nonprofit academic medical center', description: 'A nonprofit medical practice and research group focused on complex patient care.' },
 
   // Health & Fitness
   { name: 'Peloton', website: 'onepeloton.com', founded: 2012, categories: ['health-fitness', 'technology'], tagline: 'Interactive fitness equipment and media company', description: 'Sells connected exercise equipment paired with live and on-demand fitness classes.' },
   { name: 'Planet Fitness', website: 'planetfitness.com', founded: 1992, categories: ['health-fitness'], tagline: 'American gym franchise', description: 'Operates a large chain of fitness centers across the United States and beyond.' },
   { name: 'Fitbit', website: 'fitbit.com', founded: 2007, categories: ['health-fitness', 'technology'], tagline: 'Wearable fitness technology company', description: 'Makes wearable devices and software that track fitness and health metrics.' },
   { name: 'Strava', website: 'strava.com', founded: 2009, categories: ['health-fitness'], tagline: 'Fitness tracking app for athletes', description: 'A social fitness platform for tracking running, cycling, and other activities.' },
-  { name: 'Gymshark', website: 'gymshark.com', founded: 2012, categories: ['health-fitness', 'fashion'], tagline: 'British fitness apparel brand', description: 'Designs and sells gym wear and athletic apparel, sold primarily online.' },
+  { name: 'Gymshark', website: 'gymshark.com', founded: 2012, categories: ['health-fitness', 'shopping'], tagline: 'British fitness apparel brand', description: 'Designs and sells gym wear and athletic apparel, sold primarily online.' },
 
   // Home & Living
   { name: 'IKEA', website: 'ikea.com', founded: 1943, categories: ['home-living'], tagline: 'Swedish multinational furniture retailer', description: 'Designs and sells ready-to-assemble furniture, kitchenware, and home accessories.' },
@@ -117,10 +119,10 @@ const COMPANIES = [
   { name: 'Dyson', website: 'dyson.com', founded: 1991, categories: ['home-living', 'technology'], tagline: 'British technology company', description: 'Designs and manufactures vacuum cleaners, fans, and other household appliances.' },
 
   // Kids & Family
-  { name: 'LEGO', website: 'lego.com', founded: 1932, categories: ['kids-family'], tagline: 'Danish toy production company', description: 'Manufactures the LEGO brand of plastic construction toys and related media.' },
-  { name: 'Mattel', website: 'mattel.com', founded: 1945, categories: ['kids-family'], tagline: 'American multinational toy manufacturer', description: 'Designs and manufactures toys including Barbie, Hot Wheels, and Fisher-Price.' },
-  { name: 'Hasbro', website: 'hasbro.com', founded: 1923, categories: ['kids-family'], tagline: 'American multinational toy and game company', description: 'Produces toys, board games, and entertainment properties for children and families.' },
-  { name: 'Toys"R"Us', website: 'toysrus.com', founded: 1948, categories: ['kids-family', 'shopping'], tagline: 'American toy and juvenile products retailer', description: 'A retail chain specializing in toys, games, and children\'s products.' },
+  { name: 'LEGO', website: 'lego.com', founded: 1932, categories: ['home-living'], tagline: 'Danish toy production company', description: 'Manufactures the LEGO brand of plastic construction toys and related media.' },
+  { name: 'Mattel', website: 'mattel.com', founded: 1945, categories: ['home-living'], tagline: 'American multinational toy manufacturer', description: 'Designs and manufactures toys including Barbie, Hot Wheels, and Fisher-Price.' },
+  { name: 'Hasbro', website: 'hasbro.com', founded: 1923, categories: ['home-living'], tagline: 'American multinational toy and game company', description: 'Produces toys, board games, and entertainment properties for children and families.' },
+  { name: 'Toys"R"Us', website: 'toysrus.com', founded: 1948, categories: ['home-living', 'shopping'], tagline: 'American toy and juvenile products retailer', description: 'A retail chain specializing in toys, games, and children\'s products.' },
 
   // Media
   { name: 'The New York Times', website: 'nytimes.com', founded: 1851, categories: ['media'], tagline: 'American daily newspaper', description: 'A widely-circulated newspaper and digital news publisher based in New York City.' },
@@ -129,16 +131,16 @@ const COMPANIES = [
   { name: 'The Washington Post', website: 'washingtonpost.com', founded: 1877, categories: ['media'], tagline: 'American daily newspaper', description: 'A major newspaper based in Washington, D.C., covering national and world news.' },
 
   // Nonprofit & Community
-  { name: 'American Red Cross', website: 'redcross.org', founded: 1881, categories: ['nonprofit-community'], tagline: 'Humanitarian nonprofit organization', description: 'Provides emergency assistance, disaster relief, and disaster preparedness education.' },
-  { name: 'World Wildlife Fund', website: 'worldwildlife.org', founded: 1961, categories: ['nonprofit-community'], tagline: 'International conservation organization', description: 'Works on wildlife conservation and the reduction of humanity\'s environmental footprint.' },
-  { name: 'Habitat for Humanity', website: 'habitat.org', founded: 1976, categories: ['nonprofit-community', 'real-estate'], tagline: 'Nonprofit housing organization', description: 'Builds and rehabilitates affordable housing in partnership with families in need.' },
-  { name: 'UNICEF', website: 'unicef.org', founded: 1946, categories: ['nonprofit-community', 'kids-family'], tagline: "United Nations agency for children's welfare", description: 'Provides humanitarian and developmental aid to children worldwide.' },
+  { name: 'American Red Cross', website: 'redcross.org', founded: 1881, categories: ['business-professional-services'], tagline: 'Humanitarian nonprofit organization', description: 'Provides emergency assistance, disaster relief, and disaster preparedness education.' },
+  { name: 'World Wildlife Fund', website: 'worldwildlife.org', founded: 1961, categories: ['business-professional-services'], tagline: 'International conservation organization', description: 'Works on wildlife conservation and the reduction of humanity\'s environmental footprint.' },
+  { name: 'Habitat for Humanity', website: 'habitat.org', founded: 1976, categories: ['business-professional-services', 'real-estate'], tagline: 'Nonprofit housing organization', description: 'Builds and rehabilitates affordable housing in partnership with families in need.' },
+  { name: 'UNICEF', website: 'unicef.org', founded: 1946, categories: ['business-professional-services', 'home-living'], tagline: "United Nations agency for children's welfare", description: 'Provides humanitarian and developmental aid to children worldwide.' },
 
   // Pets
-  { name: 'Chewy', website: 'chewy.com', founded: 2011, categories: ['pets', 'shopping'], tagline: 'American online pet retailer', description: 'An e-commerce company selling pet food, supplies, and pharmacy products.' },
-  { name: 'Petco', website: 'petco.com', founded: 1965, categories: ['pets'], tagline: 'American pet supply retailer', description: 'Operates pet stores selling food, supplies, and health services for pets.' },
-  { name: 'PetSmart', website: 'petsmart.com', founded: 1986, categories: ['pets'], tagline: 'North American pet supply retailer', description: 'A large pet retail chain offering pet products, grooming, and services.' },
-  { name: 'Blue Buffalo', website: 'bluebuffalo.com', founded: 2002, categories: ['pets'], tagline: 'American pet food company', description: 'Manufactures natural pet food for dogs and cats.' },
+  { name: 'Chewy', website: 'chewy.com', founded: 2011, categories: ['home-living', 'shopping'], tagline: 'American online pet retailer', description: 'An e-commerce company selling pet food, supplies, and pharmacy products.' },
+  { name: 'Petco', website: 'petco.com', founded: 1965, categories: ['home-living'], tagline: 'American pet supply retailer', description: 'Operates pet stores selling food, supplies, and health services for pets.' },
+  { name: 'PetSmart', website: 'petsmart.com', founded: 1986, categories: ['home-living'], tagline: 'North American pet supply retailer', description: 'A large pet retail chain offering pet products, grooming, and services.' },
+  { name: 'Blue Buffalo', website: 'bluebuffalo.com', founded: 2002, categories: ['home-living'], tagline: 'American pet food company', description: 'Manufactures natural pet food for dogs and cats.' },
 
   // Real Estate
   { name: 'Zillow', website: 'zillow.com', founded: 2006, categories: ['real-estate', 'technology'], tagline: 'American online real estate marketplace', description: 'An online platform for buying, selling, renting, and financing real estate.' },
@@ -154,24 +156,24 @@ const COMPANIES = [
   { name: 'Costco', website: 'costco.com', founded: 1983, categories: ['shopping'], tagline: 'American multinational membership warehouse club', description: 'Operates membership-only warehouse clubs selling goods in bulk.' },
 
   // Software
-  { name: 'Microsoft', website: 'microsoft.com', founded: 1975, categories: ['software', 'technology'], tagline: 'American multinational technology corporation', description: 'Develops, licenses, and sells computer software, consumer electronics, and cloud services.' },
-  { name: 'Adobe', website: 'adobe.com', founded: 1982, categories: ['software'], tagline: 'American multinational software company', description: 'Creates software for creative work, document management, and digital marketing.' },
-  { name: 'Salesforce', website: 'salesforce.com', founded: 1999, categories: ['software', 'business-professional-services'], tagline: 'American cloud-based software company', description: 'Provides customer relationship management (CRM) software and applications.' },
-  { name: 'Slack', website: 'slack.com', founded: 2013, categories: ['software'], tagline: 'Business communication platform', description: 'A messaging and collaboration platform used by teams and organizations.' },
-  { name: 'Atlassian', website: 'atlassian.com', founded: 2002, categories: ['software'], tagline: 'Australian enterprise software company', description: 'Develops products for software development, project management, and collaboration.' },
+  { name: 'Microsoft', website: 'microsoft.com', founded: 1975, categories: ['technology'], tagline: 'American multinational technology corporation', description: 'Develops, licenses, and sells computer software, consumer electronics, and cloud services.' },
+  { name: 'Adobe', website: 'adobe.com', founded: 1982, categories: ['technology'], tagline: 'American multinational software company', description: 'Creates software for creative work, document management, and digital marketing.' },
+  { name: 'Salesforce', website: 'salesforce.com', founded: 1999, categories: ['technology', 'business-professional-services'], tagline: 'American cloud-based software company', description: 'Provides customer relationship management (CRM) software and applications.' },
+  { name: 'Slack', website: 'slack.com', founded: 2013, categories: ['technology'], tagline: 'Business communication platform', description: 'A messaging and collaboration platform used by teams and organizations.' },
+  { name: 'Atlassian', website: 'atlassian.com', founded: 2002, categories: ['technology'], tagline: 'Australian enterprise software company', description: 'Develops products for software development, project management, and collaboration.' },
 
   // Sports
-  { name: 'ESPN', website: 'espn.com', founded: 1979, categories: ['sports', 'media'], tagline: 'American sports media company', description: 'Broadcasts and publishes sports programming, news, and analysis.' },
-  { name: 'Under Armour', website: 'underarmour.com', founded: 1996, categories: ['sports', 'fashion'], tagline: 'American sports apparel and equipment company', description: 'Designs and manufactures athletic apparel, footwear, and accessories.' },
-  { name: 'Fanatics', website: 'fanatics.com', founded: 1995, categories: ['sports', 'shopping'], tagline: 'American licensed sports merchandise retailer', description: 'Sells licensed sports merchandise, apparel, and trading cards online.' },
-  { name: 'Decathlon', website: 'decathlon.com', founded: 1976, categories: ['sports'], tagline: 'French sporting goods retailer', description: 'Designs and sells sporting goods and equipment for a wide range of sports.' },
+  { name: 'ESPN', website: 'espn.com', founded: 1979, categories: ['entertainment', 'media'], tagline: 'American sports media company', description: 'Broadcasts and publishes sports programming, news, and analysis.' },
+  { name: 'Under Armour', website: 'underarmour.com', founded: 1996, categories: ['entertainment', 'shopping'], tagline: 'American sports apparel and equipment company', description: 'Designs and manufactures athletic apparel, footwear, and accessories.' },
+  { name: 'Fanatics', website: 'fanatics.com', founded: 1995, categories: ['entertainment', 'shopping'], tagline: 'American licensed sports merchandise retailer', description: 'Sells licensed sports merchandise, apparel, and trading cards online.' },
+  { name: 'Decathlon', website: 'decathlon.com', founded: 1976, categories: ['entertainment'], tagline: 'French sporting goods retailer', description: 'Designs and sells sporting goods and equipment for a wide range of sports.' },
 
   // Technology
-  { name: 'Apple', website: 'apple.com', founded: 1976, categories: ['technology', 'software'], tagline: 'American multinational technology company', description: 'Designs and manufactures consumer electronics, software, and online services.' },
-  { name: 'Google', website: 'google.com', founded: 1998, categories: ['technology', 'software'], tagline: 'American multinational technology company', description: 'Provides internet search, cloud computing, advertising, and software services.' },
+  { name: 'Apple', website: 'apple.com', founded: 1976, categories: ['technology'], tagline: 'American multinational technology company', description: 'Designs and manufactures consumer electronics, software, and online services.' },
+  { name: 'Google', website: 'google.com', founded: 1998, categories: ['technology'], tagline: 'American multinational technology company', description: 'Provides internet search, cloud computing, advertising, and software services.' },
   { name: 'Meta', website: 'meta.com', founded: 2004, categories: ['technology'], tagline: 'American multinational technology conglomerate', description: 'Builds social technology, including Facebook, Instagram, and virtual reality products.' },
   { name: 'Samsung Electronics', website: 'samsung.com', founded: 1969, categories: ['technology'], tagline: 'South Korean multinational electronics company', description: 'Manufactures consumer electronics, semiconductors, and mobile devices.' },
-  { name: 'IBM', website: 'ibm.com', founded: 1911, categories: ['technology', 'software'], tagline: 'American multinational technology corporation', description: 'Provides computer hardware, software, and consulting services worldwide.' },
+  { name: 'IBM', website: 'ibm.com', founded: 1911, categories: ['technology'], tagline: 'American multinational technology corporation', description: 'Provides computer hardware, software, and consulting services worldwide.' },
 
   // Travel
   { name: 'Airbnb', website: 'airbnb.com', founded: 2008, categories: ['travel', 'technology'], tagline: 'American online marketplace for lodging', description: 'An online platform connecting travelers with hosts offering short-term lodging.' },
@@ -204,6 +206,69 @@ function initials(name) {
 
 function sqlString(s) {
   return `'${s.replace(/'/g, "''")}'`
+}
+
+/**
+ * Queries the currently-linked Supabase project's REAL categories table
+ * (slug, is_archived) via the Supabase CLI — not a hardcoded mirror of the
+ * schema, which is exactly the class of bug that caused Phase 40 to
+ * originally assign 43 of 98 companies to categories that had already been
+ * archived by the taxonomy-v2 migration (see
+ * 20260823140000_backfill_missing_taxonomy_categories.sql's commit message).
+ * A stale hardcoded active-category list could silently drift out of sync
+ * with the database the same way; this can't, because it asks the database
+ * directly every time it runs.
+ */
+function fetchLiveCategoryState() {
+  const dir = mkdtempSync(join(tmpdir(), 'phase40-cat-check-'))
+  const sqlFile = join(dir, 'query.sql')
+  writeFileSync(sqlFile, 'select slug, is_archived from categories;', 'utf-8')
+  try {
+    // shell: true is required for npx to resolve on Windows here. Safe in this
+    // context: every argument is internally generated (a fixed subcommand list
+    // plus an OS-temp path from mkdtempSync), never user input.
+    const raw = execFileSync('npx', ['supabase', 'db', 'query', '--linked', '--output', 'json', '-f', sqlFile], {
+      encoding: 'utf-8',
+      shell: true,
+    })
+    const match = raw.match(/\{[\s\S]*\}/)
+    if (!match) throw new Error(`Could not parse category query output:\n${raw}`)
+    const parsed = JSON.parse(match[0])
+    const active = new Set()
+    const all = new Set()
+    for (const row of parsed.rows) {
+      all.add(row.slug)
+      if (!row.is_archived) active.add(row.slug)
+    }
+    return { active, all }
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
+
+/**
+ * Fails loudly (throws, non-zero exit) rather than silently generating SQL
+ * that would insert an invalid or archived category link — the whole point
+ * of this check existing. Reports every offending company/category pair in
+ * one error rather than stopping at the first, so a bulk fix (like the
+ * Phase 40 correction) doesn't need N re-runs to find all N problems.
+ */
+function validateCategoriesAgainstLiveSchema() {
+  const { active, all } = fetchLiveCategoryState()
+  const problems = []
+  for (const c of COMPANIES) {
+    for (const cat of c.categories) {
+      if (!all.has(cat)) problems.push(`${c.name}: category '${cat}' does not exist in the live database`)
+      else if (!active.has(cat)) problems.push(`${c.name}: category '${cat}' is archived — pick an active category instead`)
+    }
+  }
+  if (problems.length > 0) {
+    throw new Error(
+      `Refusing to generate seed SQL — ${problems.length} categor${problems.length === 1 ? 'y' : 'ies'} ` +
+      `reference invalid/archived categories against the live schema:\n` +
+      problems.map((p) => `  - ${p}`).join('\n'),
+    )
+  }
 }
 
 function generate() {
@@ -247,7 +312,9 @@ function generate() {
   return { sql: lines.join('\n'), count: COMPANIES.length }
 }
 
+validateCategoriesAgainstLiveSchema()
 const { sql, count } = generate()
 const outPath = join(__dirname, '..', 'supabase', 'seed-data', 'phase40_real_companies.sql')
 writeFileSync(outPath, sql, 'utf-8')
+console.log(`Validated against the live schema (linked project) — no archived/missing categories referenced.`)
 console.log(`Generated ${outPath} with ${count} companies.`)

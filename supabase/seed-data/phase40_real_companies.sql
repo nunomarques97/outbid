@@ -23,19 +23,19 @@ insert into company_categories (company_id, category_id) select co.id, cat.id fr
 
 -- L'Oréal
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('l-oreal', 'L''Oréal', 'L', '#FFA07A', 'French multinational cosmetics company', 'One of the world''s largest cosmetics companies, producing skincare, haircare, makeup, and fragrance.', 'loreal.com', 1909, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'l-oreal' and cat.slug in ('beauty-personal-care') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'l-oreal' and cat.slug in ('shopping') on conflict do nothing;
 
 -- Sephora
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('sephora', 'Sephora', 'S', '#85C1E9', 'Multinational beauty retailer', 'A retail chain selling cosmetics, skincare, and fragrance from hundreds of brands.', 'sephora.com', 1969, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'sephora' and cat.slug in ('beauty-personal-care', 'shopping') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'sephora' and cat.slug in ('shopping') on conflict do nothing;
 
 -- The Body Shop
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('the-body-shop', 'The Body Shop', 'BS', '#5DADE2', 'British cosmetics and skincare retailer', 'Known for naturally-inspired, ethically-sourced beauty and personal care products.', 'thebodyshop.com', 1976, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'the-body-shop' and cat.slug in ('beauty-personal-care') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'the-body-shop' and cat.slug in ('shopping') on conflict do nothing;
 
 -- Estée Lauder
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('estee-lauder', 'Estée Lauder', 'EL', '#F0B27A', 'American skincare, makeup, and fragrance company', 'A global manufacturer and marketer of prestige skincare, makeup, and fragrance products.', 'esteelauder.com', 1946, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'estee-lauder' and cat.slug in ('beauty-personal-care') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'estee-lauder' and cat.slug in ('shopping') on conflict do nothing;
 
 -- Deloitte
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('deloitte', 'Deloitte', 'D', '#A9CCE3', 'Multinational professional services network', 'Provides audit, consulting, tax, and advisory services to organizations worldwide.', 'deloitte.com', 1845, 0, true) on conflict (slug) do nothing;
@@ -55,35 +55,35 @@ insert into company_categories (company_id, category_id) select co.id, cat.id fr
 
 -- Starbucks
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('starbucks', 'Starbucks', 'S', '#F0B27A', 'American multinational coffeehouse chain', 'Operates coffeehouses worldwide, roasting and selling coffee beans and beverages.', 'starbucks.com', 1971, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'starbucks' and cat.slug in ('coffee') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'starbucks' and cat.slug in ('food-dining') on conflict do nothing;
 
 -- Dunkin'
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('dunkin', 'Dunkin''', 'D', '#A9CCE3', 'American coffee and baked goods chain', 'A quick-service chain known for coffee, donuts, and breakfast sandwiches.', 'dunkindonuts.com', 1950, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'dunkin' and cat.slug in ('coffee', 'food-dining') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'dunkin' and cat.slug in ('food-dining') on conflict do nothing;
 
 -- Peet's Coffee
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('peet-s-coffee', 'Peet''s Coffee', 'PC', '#FFA07A', 'American specialty coffee roaster and retailer', 'Founded in Berkeley, California, known for dark-roasted specialty coffee.', 'peets.com', 1966, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'peet-s-coffee' and cat.slug in ('coffee') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'peet-s-coffee' and cat.slug in ('food-dining') on conflict do nothing;
 
 -- Costa Coffee
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('costa-coffee', 'Costa Coffee', 'CC', '#85C1E9', 'British multinational coffeehouse chain', 'A coffeehouse chain founded in London, with locations across many countries.', 'costacoffee.com', 1971, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'costa-coffee' and cat.slug in ('coffee') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'costa-coffee' and cat.slug in ('food-dining') on conflict do nothing;
 
 -- Blue Bottle Coffee
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('blue-bottle-coffee', 'Blue Bottle Coffee', 'BB', '#5DADE2', 'American specialty coffee roaster', 'A specialty coffee company known for single-origin beans and cafes worldwide.', 'bluebottlecoffee.com', 2002, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'blue-bottle-coffee' and cat.slug in ('coffee') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'blue-bottle-coffee' and cat.slug in ('food-dining') on conflict do nothing;
 
 -- Coursera
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('coursera', 'Coursera', 'C', '#F0B27A', 'Online learning platform', 'Partners with universities and companies to offer online courses, certificates, and degrees.', 'coursera.org', 2012, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'coursera' and cat.slug in ('education', 'software') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'coursera' and cat.slug in ('education', 'technology') on conflict do nothing;
 
 -- Khan Academy
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('khan-academy', 'Khan Academy', 'KA', '#A9CCE3', 'Nonprofit educational organization', 'Provides free online courses, lessons, and practice exercises across many subjects.', 'khanacademy.org', 2008, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'khan-academy' and cat.slug in ('education', 'nonprofit-community') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'khan-academy' and cat.slug in ('education', 'business-professional-services') on conflict do nothing;
 
 -- Duolingo
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('duolingo', 'Duolingo', 'D', '#FFA07A', 'Language-learning app and platform', 'Offers free, gamified language courses through a mobile app and website.', 'duolingo.com', 2011, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'duolingo' and cat.slug in ('education', 'software') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'duolingo' and cat.slug in ('education', 'technology') on conflict do nothing;
 
 -- Udemy
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('udemy', 'Udemy', 'U', '#85C1E9', 'Online learning marketplace', 'An online marketplace where instructors create courses on a wide range of skills.', 'udemy.com', 2010, 0, true) on conflict (slug) do nothing;
@@ -99,7 +99,7 @@ insert into company_categories (company_id, category_id) select co.id, cat.id fr
 
 -- The Walt Disney Company
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('the-walt-disney-company', 'The Walt Disney Company', 'WD', '#A9CCE3', 'American mass media and entertainment conglomerate', 'Produces films, television, and operates theme parks and streaming services.', 'disney.com', 1923, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'the-walt-disney-company' and cat.slug in ('entertainment', 'kids-family') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'the-walt-disney-company' and cat.slug in ('entertainment', 'home-living') on conflict do nothing;
 
 -- Spotify
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('spotify', 'Spotify', 'S', '#FFA07A', 'Audio streaming and media service', 'A digital music, podcast, and audio streaming platform available worldwide.', 'spotify.com', 2006, 0, true) on conflict (slug) do nothing;
@@ -115,23 +115,23 @@ insert into company_categories (company_id, category_id) select co.id, cat.id fr
 
 -- Nike
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('nike', 'Nike', 'N', '#F0B27A', 'American athletic footwear and apparel company', 'Designs, manufactures, and markets athletic footwear, apparel, and equipment worldwide.', 'nike.com', 1964, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'nike' and cat.slug in ('fashion', 'sports') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'nike' and cat.slug in ('shopping', 'entertainment') on conflict do nothing;
 
 -- Zara
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('zara', 'Zara', 'Z', '#A9CCE3', 'Spanish fast-fashion clothing retailer', 'A clothing and accessories retailer, part of the Inditex group, with stores worldwide.', 'zara.com', 1975, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'zara' and cat.slug in ('fashion') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'zara' and cat.slug in ('shopping') on conflict do nothing;
 
 -- H&M
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('handm', 'H&M', 'H', '#FFA07A', 'Swedish multinational clothing retailer', 'Sells clothing and accessories for men, women, teenagers, and children globally.', 'hm.com', 1947, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'handm' and cat.slug in ('fashion') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'handm' and cat.slug in ('shopping') on conflict do nothing;
 
 -- Levi's
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('levi-s', 'Levi''s', 'L', '#85C1E9', 'American clothing company known for denim', 'Known for inventing blue jeans, now selling denim and casual apparel worldwide.', 'levi.com', 1853, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'levi-s' and cat.slug in ('fashion') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'levi-s' and cat.slug in ('shopping') on conflict do nothing;
 
 -- Adidas
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('adidas', 'Adidas', 'A', '#5DADE2', 'German multinational sportswear manufacturer', 'Designs and manufactures athletic shoes, apparel, and accessories worldwide.', 'adidas.com', 1949, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'adidas' and cat.slug in ('fashion', 'sports') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'adidas' and cat.slug in ('shopping', 'entertainment') on conflict do nothing;
 
 -- Visa
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('visa', 'Visa', 'V', '#F0B27A', 'Multinational payments technology company', 'Operates one of the world''s largest electronic payment networks.', 'visa.com', 1958, 0, true) on conflict (slug) do nothing;
@@ -175,19 +175,19 @@ insert into company_categories (company_id, category_id) select co.id, cat.id fr
 
 -- CVS Health
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('cvs-health', 'CVS Health', 'CH', '#F0B27A', 'American healthcare and pharmacy company', 'Operates pharmacies, health clinics, and health insurance services across the US.', 'cvshealth.com', 1963, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'cvs-health' and cat.slug in ('health') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'cvs-health' and cat.slug in ('health-fitness') on conflict do nothing;
 
 -- Johnson & Johnson
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('johnson-and-johnson', 'Johnson & Johnson', 'JJ', '#A9CCE3', 'American multinational healthcare company', 'Develops pharmaceuticals, medical devices, and consumer health products.', 'jnj.com', 1886, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'johnson-and-johnson' and cat.slug in ('health') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'johnson-and-johnson' and cat.slug in ('health-fitness') on conflict do nothing;
 
 -- Pfizer
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('pfizer', 'Pfizer', 'P', '#FFA07A', 'American multinational pharmaceutical company', 'Researches, develops, and manufactures medicines and vaccines.', 'pfizer.com', 1849, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'pfizer' and cat.slug in ('health') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'pfizer' and cat.slug in ('health-fitness') on conflict do nothing;
 
 -- Mayo Clinic
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('mayo-clinic', 'Mayo Clinic', 'MC', '#85C1E9', 'Nonprofit academic medical center', 'A nonprofit medical practice and research group focused on complex patient care.', 'mayoclinic.org', 1889, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'mayo-clinic' and cat.slug in ('health', 'nonprofit-community') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'mayo-clinic' and cat.slug in ('health-fitness', 'business-professional-services') on conflict do nothing;
 
 -- Peloton
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('peloton', 'Peloton', 'P', '#5DADE2', 'Interactive fitness equipment and media company', 'Sells connected exercise equipment paired with live and on-demand fitness classes.', 'onepeloton.com', 2012, 0, true) on conflict (slug) do nothing;
@@ -207,7 +207,7 @@ insert into company_categories (company_id, category_id) select co.id, cat.id fr
 
 -- Gymshark
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('gymshark', 'Gymshark', 'G', '#85C1E9', 'British fitness apparel brand', 'Designs and sells gym wear and athletic apparel, sold primarily online.', 'gymshark.com', 2012, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'gymshark' and cat.slug in ('health-fitness', 'fashion') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'gymshark' and cat.slug in ('health-fitness', 'shopping') on conflict do nothing;
 
 -- IKEA
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('ikea', 'IKEA', 'I', '#5DADE2', 'Swedish multinational furniture retailer', 'Designs and sells ready-to-assemble furniture, kitchenware, and home accessories.', 'ikea.com', 1943, 0, true) on conflict (slug) do nothing;
@@ -227,19 +227,19 @@ insert into company_categories (company_id, category_id) select co.id, cat.id fr
 
 -- LEGO
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('lego', 'LEGO', 'L', '#85C1E9', 'Danish toy production company', 'Manufactures the LEGO brand of plastic construction toys and related media.', 'lego.com', 1932, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'lego' and cat.slug in ('kids-family') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'lego' and cat.slug in ('home-living') on conflict do nothing;
 
 -- Mattel
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('mattel', 'Mattel', 'M', '#5DADE2', 'American multinational toy manufacturer', 'Designs and manufactures toys including Barbie, Hot Wheels, and Fisher-Price.', 'mattel.com', 1945, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'mattel' and cat.slug in ('kids-family') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'mattel' and cat.slug in ('home-living') on conflict do nothing;
 
 -- Hasbro
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('hasbro', 'Hasbro', 'H', '#F0B27A', 'American multinational toy and game company', 'Produces toys, board games, and entertainment properties for children and families.', 'hasbro.com', 1923, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'hasbro' and cat.slug in ('kids-family') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'hasbro' and cat.slug in ('home-living') on conflict do nothing;
 
 -- Toys"R"Us
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('toys-r-us', 'Toys"R"Us', 'T', '#A9CCE3', 'American toy and juvenile products retailer', 'A retail chain specializing in toys, games, and children''s products.', 'toysrus.com', 1948, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'toys-r-us' and cat.slug in ('kids-family', 'shopping') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'toys-r-us' and cat.slug in ('home-living', 'shopping') on conflict do nothing;
 
 -- The New York Times
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('the-new-york-times', 'The New York Times', 'NY', '#FFA07A', 'American daily newspaper', 'A widely-circulated newspaper and digital news publisher based in New York City.', 'nytimes.com', 1851, 0, true) on conflict (slug) do nothing;
@@ -259,35 +259,35 @@ insert into company_categories (company_id, category_id) select co.id, cat.id fr
 
 -- American Red Cross
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('american-red-cross', 'American Red Cross', 'AR', '#A9CCE3', 'Humanitarian nonprofit organization', 'Provides emergency assistance, disaster relief, and disaster preparedness education.', 'redcross.org', 1881, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'american-red-cross' and cat.slug in ('nonprofit-community') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'american-red-cross' and cat.slug in ('business-professional-services') on conflict do nothing;
 
 -- World Wildlife Fund
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('world-wildlife-fund', 'World Wildlife Fund', 'WW', '#FFA07A', 'International conservation organization', 'Works on wildlife conservation and the reduction of humanity''s environmental footprint.', 'worldwildlife.org', 1961, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'world-wildlife-fund' and cat.slug in ('nonprofit-community') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'world-wildlife-fund' and cat.slug in ('business-professional-services') on conflict do nothing;
 
 -- Habitat for Humanity
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('habitat-for-humanity', 'Habitat for Humanity', 'HF', '#85C1E9', 'Nonprofit housing organization', 'Builds and rehabilitates affordable housing in partnership with families in need.', 'habitat.org', 1976, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'habitat-for-humanity' and cat.slug in ('nonprofit-community', 'real-estate') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'habitat-for-humanity' and cat.slug in ('business-professional-services', 'real-estate') on conflict do nothing;
 
 -- UNICEF
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('unicef', 'UNICEF', 'U', '#5DADE2', 'United Nations agency for children''s welfare', 'Provides humanitarian and developmental aid to children worldwide.', 'unicef.org', 1946, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'unicef' and cat.slug in ('nonprofit-community', 'kids-family') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'unicef' and cat.slug in ('business-professional-services', 'home-living') on conflict do nothing;
 
 -- Chewy
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('chewy', 'Chewy', 'C', '#F0B27A', 'American online pet retailer', 'An e-commerce company selling pet food, supplies, and pharmacy products.', 'chewy.com', 2011, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'chewy' and cat.slug in ('pets', 'shopping') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'chewy' and cat.slug in ('home-living', 'shopping') on conflict do nothing;
 
 -- Petco
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('petco', 'Petco', 'P', '#A9CCE3', 'American pet supply retailer', 'Operates pet stores selling food, supplies, and health services for pets.', 'petco.com', 1965, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'petco' and cat.slug in ('pets') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'petco' and cat.slug in ('home-living') on conflict do nothing;
 
 -- PetSmart
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('petsmart', 'PetSmart', 'P', '#FFA07A', 'North American pet supply retailer', 'A large pet retail chain offering pet products, grooming, and services.', 'petsmart.com', 1986, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'petsmart' and cat.slug in ('pets') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'petsmart' and cat.slug in ('home-living') on conflict do nothing;
 
 -- Blue Buffalo
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('blue-buffalo', 'Blue Buffalo', 'BB', '#85C1E9', 'American pet food company', 'Manufactures natural pet food for dogs and cats.', 'bluebuffalo.com', 2002, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'blue-buffalo' and cat.slug in ('pets') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'blue-buffalo' and cat.slug in ('home-living') on conflict do nothing;
 
 -- Zillow
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('zillow', 'Zillow', 'Z', '#5DADE2', 'American online real estate marketplace', 'An online platform for buying, selling, renting, and financing real estate.', 'zillow.com', 2006, 0, true) on conflict (slug) do nothing;
@@ -327,47 +327,47 @@ insert into company_categories (company_id, category_id) select co.id, cat.id fr
 
 -- Microsoft
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('microsoft', 'Microsoft', 'M', '#85C1E9', 'American multinational technology corporation', 'Develops, licenses, and sells computer software, consumer electronics, and cloud services.', 'microsoft.com', 1975, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'microsoft' and cat.slug in ('software', 'technology') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'microsoft' and cat.slug in ('technology') on conflict do nothing;
 
 -- Adobe
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('adobe', 'Adobe', 'A', '#5DADE2', 'American multinational software company', 'Creates software for creative work, document management, and digital marketing.', 'adobe.com', 1982, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'adobe' and cat.slug in ('software') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'adobe' and cat.slug in ('technology') on conflict do nothing;
 
 -- Salesforce
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('salesforce', 'Salesforce', 'S', '#F0B27A', 'American cloud-based software company', 'Provides customer relationship management (CRM) software and applications.', 'salesforce.com', 1999, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'salesforce' and cat.slug in ('software', 'business-professional-services') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'salesforce' and cat.slug in ('technology', 'business-professional-services') on conflict do nothing;
 
 -- Slack
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('slack', 'Slack', 'S', '#A9CCE3', 'Business communication platform', 'A messaging and collaboration platform used by teams and organizations.', 'slack.com', 2013, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'slack' and cat.slug in ('software') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'slack' and cat.slug in ('technology') on conflict do nothing;
 
 -- Atlassian
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('atlassian', 'Atlassian', 'A', '#FFA07A', 'Australian enterprise software company', 'Develops products for software development, project management, and collaboration.', 'atlassian.com', 2002, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'atlassian' and cat.slug in ('software') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'atlassian' and cat.slug in ('technology') on conflict do nothing;
 
 -- ESPN
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('espn', 'ESPN', 'E', '#85C1E9', 'American sports media company', 'Broadcasts and publishes sports programming, news, and analysis.', 'espn.com', 1979, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'espn' and cat.slug in ('sports', 'media') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'espn' and cat.slug in ('entertainment', 'media') on conflict do nothing;
 
 -- Under Armour
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('under-armour', 'Under Armour', 'UA', '#5DADE2', 'American sports apparel and equipment company', 'Designs and manufactures athletic apparel, footwear, and accessories.', 'underarmour.com', 1996, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'under-armour' and cat.slug in ('sports', 'fashion') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'under-armour' and cat.slug in ('entertainment', 'shopping') on conflict do nothing;
 
 -- Fanatics
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('fanatics', 'Fanatics', 'F', '#F0B27A', 'American licensed sports merchandise retailer', 'Sells licensed sports merchandise, apparel, and trading cards online.', 'fanatics.com', 1995, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'fanatics' and cat.slug in ('sports', 'shopping') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'fanatics' and cat.slug in ('entertainment', 'shopping') on conflict do nothing;
 
 -- Decathlon
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('decathlon', 'Decathlon', 'D', '#A9CCE3', 'French sporting goods retailer', 'Designs and sells sporting goods and equipment for a wide range of sports.', 'decathlon.com', 1976, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'decathlon' and cat.slug in ('sports') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'decathlon' and cat.slug in ('entertainment') on conflict do nothing;
 
 -- Apple
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('apple', 'Apple', 'A', '#FFA07A', 'American multinational technology company', 'Designs and manufactures consumer electronics, software, and online services.', 'apple.com', 1976, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'apple' and cat.slug in ('technology', 'software') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'apple' and cat.slug in ('technology') on conflict do nothing;
 
 -- Google
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('google', 'Google', 'G', '#85C1E9', 'American multinational technology company', 'Provides internet search, cloud computing, advertising, and software services.', 'google.com', 1998, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'google' and cat.slug in ('technology', 'software') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'google' and cat.slug in ('technology') on conflict do nothing;
 
 -- Meta
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('meta', 'Meta', 'M', '#5DADE2', 'American multinational technology conglomerate', 'Builds social technology, including Facebook, Instagram, and virtual reality products.', 'meta.com', 2004, 0, true) on conflict (slug) do nothing;
@@ -379,7 +379,7 @@ insert into company_categories (company_id, category_id) select co.id, cat.id fr
 
 -- IBM
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('ibm', 'IBM', 'I', '#A9CCE3', 'American multinational technology corporation', 'Provides computer hardware, software, and consulting services worldwide.', 'ibm.com', 1911, 0, true) on conflict (slug) do nothing;
-insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'ibm' and cat.slug in ('technology', 'software') on conflict do nothing;
+insert into company_categories (company_id, category_id) select co.id, cat.id from companies co, categories cat where co.slug = 'ibm' and cat.slug in ('technology') on conflict do nothing;
 
 -- Airbnb
 insert into companies (slug, name, initials, logo_color, tagline, description, website, founded_year, organic_votes_baseline, is_seed) values ('airbnb', 'Airbnb', 'A', '#FFA07A', 'American online marketplace for lodging', 'An online platform connecting travelers with hosts offering short-term lodging.', 'airbnb.com', 2008, 0, true) on conflict (slug) do nothing;
