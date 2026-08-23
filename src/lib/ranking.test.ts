@@ -6,6 +6,7 @@ import {
   getGlobalBidStatus,
   getTopBidders,
   getTopCategoriesByBidTotal,
+  getCategoriesRankedByBidTotal,
   splitTopBiddersForHomepage,
 } from './ranking'
 import type { Bid, Category, Company } from '@/mocks/types'
@@ -339,5 +340,79 @@ describe('getTopCategoriesByBidTotal', () => {
   it('excludes a category with zero sponsored spend', () => {
     const top = getTopCategoriesByBidTotal(companies, bids, GLOBAL, categories, 3)
     expect(top.some((t) => t.category.slug === 'quiet-category')).toBe(false)
+  })
+})
+
+// Regression coverage for the real bug: after Repcastr placed its first
+// bid, the homepage "Top rankings by category" collapsed down to only the
+// 1-2 categories Repcastr belongs to, because it was built on
+// getTopCategoriesByBidTotal (which deliberately excludes zero-bid
+// categories for a different widget). getCategoriesRankedByBidTotal is the
+// fix: same ordering, but the full category collection is always
+// preserved.
+describe('getCategoriesRankedByBidTotal', () => {
+  const categories = [
+    makeCategory({ id: 'food-dining' }),
+    makeCategory({ id: 'technology' }),
+    makeCategory({ id: 'quiet-category' }),
+    makeCategory({ id: 'another-quiet-category' }),
+  ]
+  const companies = [
+    makeCompany({ id: 'starbucks', categoryIds: ['food-dining'] }),
+    makeCompany({ id: 'mcdonalds', categoryIds: ['food-dining'] }),
+    makeCompany({ id: 'tech-a', categoryIds: ['technology'] }),
+  ]
+  const bids = [
+    makeBid({ id: 'b1', companyId: 'starbucks', amount: 50000 }),
+    makeBid({ id: 'b2', companyId: 'mcdonalds', amount: 20000 }),
+    makeBid({ id: 'b3', companyId: 'tech-a', amount: 30000 }),
+  ]
+
+  it('never drops a zero-bid category — the exact production bug', () => {
+    const ranked = getCategoriesRankedByBidTotal(companies, bids, GLOBAL, categories)
+    expect(ranked).toHaveLength(categories.length)
+    expect(ranked.map((r) => r.category.slug)).toEqual(
+      expect.arrayContaining(['quiet-category', 'another-quiet-category']),
+    )
+  })
+
+  it('sorts categories with bids ahead of zero-bid categories', () => {
+    const ranked = getCategoriesRankedByBidTotal(companies, bids, GLOBAL, categories)
+    expect(ranked.map((r) => r.category.slug)).toEqual([
+      'food-dining',
+      'technology',
+      'another-quiet-category',
+      'quiet-category',
+    ])
+  })
+
+  it('keeps zero-bid categories in a deterministic (alphabetical) tie-break order', () => {
+    const ranked = getCategoriesRankedByBidTotal(companies, bids, GLOBAL, categories)
+    const zeroBidSlugs = ranked.filter((r) => r.total === 0).map((r) => r.category.slug)
+    expect(zeroBidSlugs).toEqual(['another-quiet-category', 'quiet-category'])
+  })
+
+  it('a single small bid still keeps every other active category present (Repcastr €1 scenario)', () => {
+    const tinyBidCategories = [
+      makeCategory({ id: 'automotive' }),
+      makeCategory({ id: 'technology' }),
+      makeCategory({ id: 'travel' }),
+    ]
+    const repcastr = makeCompany({ id: 'repcastr', categoryIds: ['automotive', 'technology'] })
+    const oneEuroBid = [makeBid({ id: 'b1', companyId: 'repcastr', amount: 1 })]
+    const ranked = getCategoriesRankedByBidTotal([repcastr], oneEuroBid, GLOBAL, tinyBidCategories)
+    expect(ranked).toHaveLength(3)
+    expect(ranked.map((r) => r.category.slug)).toEqual(['automotive', 'technology', 'travel'])
+    expect(ranked.find((r) => r.category.slug === 'travel')?.total).toBe(0)
+  })
+
+  it('returns every category with total 0 when nobody has bid at all', () => {
+    const ranked = getCategoriesRankedByBidTotal(companies, [], GLOBAL, categories)
+    expect(ranked).toHaveLength(categories.length)
+    expect(ranked.every((r) => r.total === 0)).toBe(true)
+  })
+
+  it('returns an empty array only when given an empty category list (archived categories excluded upstream by the caller)', () => {
+    expect(getCategoriesRankedByBidTotal(companies, bids, GLOBAL, [])).toEqual([])
   })
 })

@@ -5,6 +5,7 @@ import { ArrowRight, TrendingUp, Shuffle, ChevronDown, ChevronUp, Rocket } from 
 import { Button, buttonVariants } from '@/components/ui/button'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { CompanyExternalLinkButton } from '@/components/shared/CompanyExternalLinkButton'
 import { AuthDialog } from '@/features/auth/AuthDialog'
 import { useAllCompanies, useCategories, usePlacements, useActiveBids } from '@/lib/supabase/hooks'
 import { getGlobalPlacement } from '@/lib/supabase/queries'
@@ -210,10 +211,13 @@ export function Hero() {
 function BidderRow({ entry, compact }: { entry: TopBidderEntry; compact?: boolean }) {
   return (
     <>
-      <span className={`font-numeral w-4 text-center ${compact ? 'text-fg-subtle' : 'text-sponsored'}`}>{entry.bid.rank}</span>
-      <CompanyAvatar initials={entry.company.initials} color={entry.company.logoColor} logoUrl={entry.company.logoUrl} size="sm" />
-      <span className="flex-1 truncate text-sm font-medium text-fg">{entry.company.name}</span>
-      <span className={`font-numeral text-sm ${compact ? 'text-fg-muted' : 'text-sponsored'}`}>{formatCurrency(entry.bid.amount)}</span>
+      <span className={`font-numeral w-4 shrink-0 text-center ${compact ? 'text-fg-subtle' : 'text-sponsored'}`}>{entry.bid.rank}</span>
+      <Link to={`/companies/${entry.company.slug}`} className="flex min-w-0 flex-1 items-center gap-2 hover:opacity-90">
+        <CompanyAvatar initials={entry.company.initials} color={entry.company.logoColor} logoUrl={entry.company.logoUrl} size="sm" />
+        <span className="min-w-0 flex-1 truncate text-sm font-medium text-fg">{entry.company.name}</span>
+      </Link>
+      <CompanyExternalLinkButton website={entry.company.website} companyName={entry.company.name} className="h-6 w-6" />
+      <span className={`font-numeral shrink-0 text-sm ${compact ? 'text-fg-muted' : 'text-sponsored'}`}>{formatCurrency(entry.bid.amount)}</span>
     </>
   )
 }

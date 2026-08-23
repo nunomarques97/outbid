@@ -8,6 +8,7 @@ import type { Category } from '@/mocks/types'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
+import { CompanyExternalLinkButton } from '@/components/shared/CompanyExternalLinkButton'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 import { formatCurrency, cn } from '@/lib/utils'
 
@@ -118,13 +119,16 @@ function BidderCard({
         <span className="font-numeral text-xs text-sponsored">#{rank}</span>
         <SponsoredBadge size="sm" />
       </div>
-      <Link to={`/companies/${entry.company.slug}`} className="flex items-center gap-2.5 hover:opacity-90">
-        <CompanyAvatar initials={entry.company.initials} color={entry.company.logoColor} logoUrl={entry.company.logoUrl} size="sm" />
-        <span className="flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold text-fg">
-          <span className="truncate">{entry.company.name}</span>
-          {entry.company.isVerified && <VerifiedBadge size="sm" />}
-        </span>
-      </Link>
+      <div className="flex items-center justify-between gap-2">
+        <Link to={`/companies/${entry.company.slug}`} className="flex min-w-0 items-center gap-2.5 hover:opacity-90">
+          <CompanyAvatar initials={entry.company.initials} color={entry.company.logoColor} logoUrl={entry.company.logoUrl} size="sm" />
+          <span className="flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold text-fg">
+            <span className="truncate">{entry.company.name}</span>
+            {entry.company.isVerified && <VerifiedBadge size="sm" />}
+          </span>
+        </Link>
+        <CompanyExternalLinkButton website={entry.company.website} companyName={entry.company.name} className="h-7 w-7" />
+      </div>
       {entryCategories.length > 0 && (
         <div className="-mt-1.5 flex flex-wrap gap-x-2 gap-y-0.5">
           {entryCategories.map((c) => (

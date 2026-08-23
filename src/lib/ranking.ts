@@ -181,15 +181,38 @@ export interface CategoryBidTotal {
 }
 
 /**
- * Homepage "top categories" — ranked by the SUM of active global bid
- * amounts across every company eligible in that category (a company in
- * two categories contributes its one bid to both totals; that's not
- * double-charging, it's the same purchase counting toward each place it's
+ * Every given category's total active sponsored bid amount (sum across
+ * every company eligible in that category — a company in two categories
+ * contributes its one global bid to both totals; that's not double-
+ * charging, it's the same purchase counting toward each place it's
  * eligible to appear, exactly like getTopBidders' category filter).
- * Categories with zero sponsored spend (total 0) are excluded — the
- * homepage showcase is meant to highlight active commercial interest, not
- * pad itself out with quiet categories (those stay fully browsable from
- * "browse all categories," just not featured here).
+ * Zero-total categories are included in the output — filtering, if any,
+ * is each caller's own choice, not baked in here.
+ */
+function computeCategoryBidTotals(
+  companies: Company[],
+  bids: Bid[],
+  globalPlacementId: string,
+  categories: Category[],
+): CategoryBidTotal[] {
+  const globalBidByCompany = new Map(getRankedBids(bids, globalPlacementId).map((b) => [b.companyId, b.amount]))
+
+  return categories.map((category) => {
+    const total = companies
+      .filter((c) => c.categoryIds.includes(category.id))
+      .reduce((sum, c) => sum + (globalBidByCompany.get(c.id) ?? 0), 0)
+    return { category, total }
+  })
+}
+
+/**
+ * Homepage showcase helper (SponsoredMechanicShowcase) — ranked by bid
+ * total, zero-spend categories excluded, capped to topN. This is meant to
+ * highlight active commercial interest, not pad itself out with quiet
+ * categories — different need from getCategoriesRankedByBidTotal below,
+ * which a full-category listing (RankingsPreview) uses instead precisely
+ * because it must never lose a category just because nobody's bidding on
+ * it yet.
  */
 export function getTopCategoriesByBidTotal(
   companies: Company[],
@@ -198,16 +221,27 @@ export function getTopCategoriesByBidTotal(
   categories: Category[],
   topN: number,
 ): CategoryBidTotal[] {
-  const globalBidByCompany = new Map(getRankedBids(bids, globalPlacementId).map((b) => [b.companyId, b.amount]))
-
-  return categories
-    .map((category) => {
-      const total = companies
-        .filter((c) => c.categoryIds.includes(category.id))
-        .reduce((sum, c) => sum + (globalBidByCompany.get(c.id) ?? 0), 0)
-      return { category, total }
-    })
+  return computeCategoryBidTotals(companies, bids, globalPlacementId, categories)
     .filter((entry) => entry.total > 0)
     .sort((a, b) => b.total - a.total || a.category.name.localeCompare(b.category.name))
     .slice(0, topN)
+}
+
+/**
+ * ALL given categories ranked by sponsored bid total, descending — zero-
+ * bid categories are always kept, never filtered out, same alphabetical
+ * tie-break as getTopCategoriesByBidTotal. The category list itself is
+ * whatever the caller passes in (e.g. every active category); this
+ * function only orders it, it never removes an entry — a category with
+ * one bid moving to #1 must never make the other 12 disappear.
+ */
+export function getCategoriesRankedByBidTotal(
+  companies: Company[],
+  bids: Bid[],
+  globalPlacementId: string,
+  categories: Category[],
+): CategoryBidTotal[] {
+  return computeCategoryBidTotals(companies, bids, globalPlacementId, categories).sort(
+    (a, b) => b.total - a.total || a.category.name.localeCompare(b.category.name),
+  )
 }

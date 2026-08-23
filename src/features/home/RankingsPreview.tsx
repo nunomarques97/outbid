@@ -6,10 +6,12 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Company } from '@/mocks/types'
 import { useCategories, useAllCompanies, usePlacements, useActiveBids, useAllCompanyRatingSummaries } from '@/lib/supabase/hooks'
 import { getGlobalPlacement, type CompanyRatingSummary } from '@/lib/supabase/queries'
-import { getCategoryRanking, getTopCategoriesByBidTotal, CATEGORY_SPONSORED_SLOTS } from '@/lib/ranking'
+import { getCategoryRanking, getCategoriesRankedByBidTotal, CATEGORY_SPONSORED_SLOTS } from '@/lib/ranking'
+import { paginate } from '@/lib/pagination'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
+import { CompanyExternalLinkButton } from '@/components/shared/CompanyExternalLinkButton'
 import { CompanyRatingInline } from '@/features/reviews/CompanyRatingInline'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 
@@ -47,27 +49,26 @@ export function RankingsPreview() {
   const globalPlacement = getGlobalPlacement(placementsQuery.data ?? [])
   if (allCategories.length === 0) return null
 
-  // Categories with active commercial interest (sum of eligible companies'
-  // global bids) lead the homepage, ranked highest-spend first — not every
-  // category equally. When nothing has an active bid yet (a fresh
-  // marketplace), fall back to every category in its existing order so the
-  // section still shows real community rankings instead of going empty.
-  // Either way this is the FULL ordered list, not just the first group —
-  // the arrows below page through it three at a time.
-  const rankedByBids = globalPlacement
-    ? getTopCategoriesByBidTotal(companies, bids, globalPlacement.id, allCategories, allCategories.length).map(
-        (t) => t.category,
-      )
-    : []
-  const orderedCategories = rankedByBids.length > 0 ? rankedByBids : allCategories
+  // Every active category, always — ranked by commercial interest (sum of
+  // eligible companies' global bids) highest first, but a category with
+  // zero bids is still a real, browsable category and must never disappear
+  // just because it currently has no sponsored interest. (Bug fixed here:
+  // getTopCategoriesByBidTotal deliberately EXCLUDES zero-bid categories —
+  // right for the SponsoredMechanicShowcase widget it was built for, wrong
+  // here, where it silently collapsed this section down to only the 1-2
+  // categories with an actual bid the moment the first bid was placed.
+  // getCategoriesRankedByBidTotal orders the same way but keeps every
+  // category, always returning exactly allCategories.length entries.)
+  const orderedCategories = globalPlacement
+    ? getCategoriesRankedByBidTotal(companies, bids, globalPlacement.id, allCategories).map((t) => t.category)
+    : allCategories
 
-  const totalPages = Math.max(1, Math.ceil(orderedCategories.length / CATEGORY_GROUP_SIZE))
-  const currentPage = Math.min(page, totalPages - 1)
-  const isFirstPage = currentPage === 0
-  const isLastPage = currentPage === totalPages - 1
-  const categories = orderedCategories.slice(
-    currentPage * CATEGORY_GROUP_SIZE,
-    currentPage * CATEGORY_GROUP_SIZE + CATEGORY_GROUP_SIZE,
+  // Arrow state must always reflect the FULL category collection (13
+  // active categories -> 5 pages), never the 3 currently rendered.
+  const { pageItems: categories, totalPages, isFirstPage, isLastPage } = paginate(
+    orderedCategories,
+    page,
+    CATEGORY_GROUP_SIZE,
   )
 
   return (
@@ -127,16 +128,23 @@ export function RankingsPreview() {
               </Link>
               <div className="flex flex-col gap-2">
                 {topSponsoredCompany && (
-                  <Link
-                    to={`/companies/${topSponsoredCompany.slug}`}
-                    className="group flex items-center gap-2.5 rounded-lg border border-sponsored/25 bg-surface-raised px-3 py-2 shadow-glow-gold transition-colors hover:border-sponsored/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
-                  >
-                    <CompanyAvatar initials={topSponsoredCompany.initials} color={topSponsoredCompany.logoColor} logoUrl={topSponsoredCompany.logoUrl} size="sm" />
-                    <span className="flex-1 truncate text-sm text-fg group-hover:underline">{topSponsoredCompany.name}</span>
-                    {topSponsoredCompany.isVerified && <VerifiedBadge size="sm" />}
-                    <CompanyRatingInline summary={ratingSummariesQuery.data?.get(topSponsoredCompany.id)} className="shrink-0" />
-                    <SponsoredBadge size="sm" />
-                  </Link>
+                  <div className="flex items-center gap-1.5 rounded-lg border border-sponsored/25 bg-surface-raised pl-3 pr-1.5 py-2 shadow-glow-gold transition-colors hover:border-sponsored/50">
+                    <Link
+                      to={`/companies/${topSponsoredCompany.slug}`}
+                      className="group flex min-w-0 flex-1 items-center gap-2.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+                    >
+                      <CompanyAvatar initials={topSponsoredCompany.initials} color={topSponsoredCompany.logoColor} logoUrl={topSponsoredCompany.logoUrl} size="sm" />
+                      <span className="min-w-0 flex-1 truncate text-sm text-fg group-hover:underline">{topSponsoredCompany.name}</span>
+                      {topSponsoredCompany.isVerified && <VerifiedBadge size="sm" />}
+                      <CompanyRatingInline summary={ratingSummariesQuery.data?.get(topSponsoredCompany.id)} className="shrink-0" />
+                      <SponsoredBadge size="sm" />
+                    </Link>
+                    <CompanyExternalLinkButton
+                      website={topSponsoredCompany.website}
+                      companyName={topSponsoredCompany.name}
+                      className="h-7 w-7"
+                    />
+                  </div>
                 )}
                 {topOrganic.map(({ company }, i) => (
                   <OrganicMiniRow
@@ -190,15 +198,18 @@ function OrganicMiniRow({
   ratingSummary: CompanyRatingSummary | undefined
 }) {
   return (
-    <Link
-      to={`/companies/${company.slug}`}
-      className="group flex items-center gap-2.5 rounded-lg px-3 py-1 transition-colors hover:bg-surface-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
-    >
-      <span className="font-numeral w-3 text-center text-xs text-organic">{rank}</span>
-      <CompanyAvatar initials={company.initials} color={company.logoColor} logoUrl={company.logoUrl} size="sm" />
-      <span className="flex-1 truncate text-sm text-fg-muted group-hover:text-fg">{company.name}</span>
-      {company.isVerified && <VerifiedBadge size="sm" />}
-      <CompanyRatingInline summary={ratingSummary} className="shrink-0" />
-    </Link>
+    <div className="group flex items-center gap-1 rounded-lg pl-3 pr-1 py-1 transition-colors hover:bg-surface-raised">
+      <Link
+        to={`/companies/${company.slug}`}
+        className="flex min-w-0 flex-1 items-center gap-2.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+      >
+        <span className="font-numeral w-3 shrink-0 text-center text-xs text-organic">{rank}</span>
+        <CompanyAvatar initials={company.initials} color={company.logoColor} logoUrl={company.logoUrl} size="sm" />
+        <span className="min-w-0 flex-1 truncate text-sm text-fg-muted group-hover:text-fg">{company.name}</span>
+        {company.isVerified && <VerifiedBadge size="sm" />}
+        <CompanyRatingInline summary={ratingSummary} className="shrink-0" />
+      </Link>
+      <CompanyExternalLinkButton website={company.website} companyName={company.name} className="h-6 w-6" />
+    </div>
   )
 }
