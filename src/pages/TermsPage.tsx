@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { LegalLayout, LegalSection, LegalInputRequired } from '@/components/legal/LegalLayout'
+import { LegalLayout, LegalSection } from '@/components/legal/LegalLayout'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 import { SUPPORT_EMAIL, PRIVACY_EMAIL } from '@/lib/contact'
 
@@ -31,9 +31,8 @@ export function TermsPage() {
       sections={SECTIONS}
       intro={
         <p>
-          These terms describe the rules that are actually built into Repcastr today. It is a
-          launch draft: sections marked <LegalInputRequired>example</LegalInputRequired> need real
-          legal decisions before this page is finalized.
+          These terms describe the rules that govern your use of Repcastr, based on how the
+          product actually works.
         </p>
       }
     >
@@ -161,7 +160,11 @@ export function TermsPage() {
           disclosed — they are not a guarantee of quality, and Repcastr is not responsible for the
           accuracy of user-submitted reviews or company-submitted content.
         </p>
-        <p>Limitation-of-liability language: <LegalInputRequired>liability limitation, reviewed by counsel</LegalInputRequired></p>
+        <p>
+          To the extent permitted by applicable law, Repcastr is not liable for indirect or
+          consequential losses arising from use of the service. Nothing in these terms limits
+          liability that cannot lawfully be limited or excluded.
+        </p>
       </LegalSection>
 
       <LegalSection id="law" title="Governing law">

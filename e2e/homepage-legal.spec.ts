@@ -51,12 +51,16 @@ test.describe('Legal pages', () => {
     await expect(page.locator('a[href^="mailto:nuno"]')).toHaveCount(0)
   })
 
-  test('remaining, genuinely undecided legal items are still explicit placeholders, not invented', async ({ page }) => {
+  test('Phase 38: no internal legal-drafting markers remain on either page', async ({ page }) => {
     await page.goto('/terms')
-    await expect(page.getByText('liability limitation, reviewed by counsel')).toBeVisible()
+    await expect(page.getByText('not liable for indirect or consequential losses')).toBeVisible()
+    await expect(page.getByText('LEGAL INPUT REQUIRED')).toHaveCount(0)
+    await expect(page.getByText('reviewed by qualified legal counsel before launch')).toHaveCount(0)
 
     await page.goto('/privacy')
-    await expect(page.getByText('formal data-subject-request process and response timeline')).toBeVisible()
+    await expect(page.getByText('respond to requests within the timeframe required by applicable')).toBeVisible()
+    await expect(page.getByText('LEGAL INPUT REQUIRED')).toHaveCount(0)
+    await expect(page.getByText('reviewed by qualified legal counsel before launch')).toHaveCount(0)
   })
 
   test('footer links to Privacy and Terms work from any page', async ({ page }) => {
@@ -66,5 +70,50 @@ test.describe('Legal pages', () => {
     await page.goto('/')
     await page.getByRole('contentinfo').getByRole('link', { name: 'Terms' }).click()
     await expect(page).toHaveURL(/\/terms/)
+  })
+})
+
+test.describe('Phase 38: official logo', () => {
+  test('header and footer show the real logo asset, not the old text wordmark', async ({ page }) => {
+    await page.goto('/')
+    const headerLogo = page.getByRole('banner').getByRole('link', { name: 'Repcastr' }).getByRole('img')
+    await expect(headerLogo).toBeVisible()
+    await expect(headerLogo).toHaveAttribute('src', '/branding/repcastr-logo-white.svg')
+
+    const footerLogo = page.getByRole('contentinfo').getByRole('link', { name: 'Repcastr' }).getByRole('img')
+    await expect(footerLogo).toBeVisible()
+    await expect(footerLogo).toHaveAttribute('src', '/branding/repcastr-logo-white.svg')
+
+    // The old logo was two plain <span>s ("Rep" + "castr") directly inside
+    // the link, with no image — confirms it's genuinely gone, not just
+    // covered up.
+    await expect(page.getByRole('banner').locator('a[href="/"] > span')).toHaveCount(0)
+  })
+
+  test('every declared branding asset resolves with real SVG content', async ({ page }) => {
+    const assets = [
+      '/favicon.svg',
+      '/branding/repcastr-logo-source.svg',
+      '/branding/repcastr-logo.svg',
+      '/branding/repcastr-logo-white.svg',
+      '/branding/repcastr-logo-dark.svg',
+      '/branding/repcastr-icon.svg',
+      '/branding/repcastr-icon-white.svg',
+      '/branding/repcastr-icon-black.svg',
+    ]
+    for (const path of assets) {
+      const res = await page.request.get(path)
+      expect(res.status(), path).toBe(200)
+      const body = await res.text()
+      expect(body, path).toContain('<svg')
+      expect(body, path).not.toContain('<image')
+      expect(body, path).not.toContain('base64')
+    }
+  })
+
+  test('the favicon <link> in <head> points at the updated file', async ({ page }) => {
+    await page.goto('/')
+    const href = await page.locator('link[rel="icon"]').getAttribute('href')
+    expect(href).toBe('/favicon.svg')
   })
 })

@@ -1,14 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="15 8 100 100" fill="none">
-  <!-- Icon mark only, cropped from repcastr-logo-source.svg's own icon group —
-       same paths, same gradient, no new artwork. -->
-  <defs>
-    <linearGradient id="repcastrIconBrand" x1="24" y1="100" x2="110" y2="26" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FF6A00"/>
-      <stop offset="0.5" stop-color="#FF8A00"/>
-      <stop offset="1" stop-color="#FFC400"/>
-    </linearGradient>
-  </defs>
-  <g fill="url(#repcastrIconBrand)">
+  <!-- Same icon paths as repcastr-icon.svg, recolored solid dark (matching
+       the wordmark's own #25272C) for use on light backgrounds. -->
+  <g fill="#25272C">
     <rect x="24" y="76" width="20" height="28" rx="5"/>
     <rect x="51" y="58" width="20" height="46" rx="5"/>
     <rect x="78" y="39" width="20" height="65" rx="5"/>

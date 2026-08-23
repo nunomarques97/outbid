@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { LegalLayout, LegalSection, LegalInputRequired } from '@/components/legal/LegalLayout'
+import { LegalLayout, LegalSection } from '@/components/legal/LegalLayout'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 import { SUPPORT_EMAIL, PRIVACY_EMAIL } from '@/lib/contact'
 
@@ -28,10 +28,8 @@ export function PrivacyPage() {
       sections={SECTIONS}
       intro={
         <p>
-          This page describes what information Repcastr actually collects and why, based on how
-          the product is built today. It is a launch draft: sections marked{' '}
-          <LegalInputRequired>example</LegalInputRequired> need real legal details filled in —
-          none of that has been invented here.
+          This page describes what information Repcastr collects, why, and what you can do about
+          it — based on how the product actually works.
         </p>
       }
     >
@@ -163,8 +161,9 @@ export function PrivacyPage() {
           <a href={`mailto:${PRIVACY_EMAIL}`} className="text-brand hover:underline">{PRIVACY_EMAIL}</a>.
         </p>
         <p>
-          The detailed internal process/timeline for handling such a request:{' '}
-          <LegalInputRequired>formal data-subject-request process and response timeline</LegalInputRequired>
+          We will review and respond to requests within the timeframe required by applicable
+          data-protection law. We may request information needed to verify the identity of the
+          requester before processing a request.
         </p>
       </LegalSection>
 

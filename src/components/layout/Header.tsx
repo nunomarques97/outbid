@@ -30,9 +30,8 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-bg/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6">
-        <Link to="/" className="flex shrink-0 items-center gap-0.5 text-xl font-extrabold tracking-tight">
-          <span className="text-fg">Rep</span>
-          <span className="text-sponsored">castr</span>
+        <Link to="/" className="flex shrink-0 items-center">
+          <img src="/branding/repcastr-logo-white.svg" alt="Repcastr" className="h-8 w-auto" />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">

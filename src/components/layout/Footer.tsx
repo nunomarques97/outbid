@@ -6,9 +6,8 @@ export function Footer() {
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 sm:px-6">
         <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
           <div>
-            <Link to="/" className="flex items-center gap-0.5 text-lg font-extrabold tracking-tight">
-              <span className="text-fg">Rep</span>
-              <span className="text-sponsored">castr</span>
+            <Link to="/" className="flex items-center">
+              <img src="/branding/repcastr-logo-white.svg" alt="Repcastr" className="h-7 w-auto" />
             </Link>
             <p className="mt-2 max-w-sm text-sm text-fg-muted">
               Rankings, comparisons, and deals worth trusting — with sponsored placements always

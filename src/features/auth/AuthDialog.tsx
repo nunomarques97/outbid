@@ -40,6 +40,7 @@ export function AuthDialog({
           <ResetPasswordForm onBack={() => setView('auth')} />
         ) : (
           <>
+            <img src="/branding/repcastr-icon.svg" alt="" className="mb-3 h-8 w-8" />
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>{description}</DialogDescription>
 

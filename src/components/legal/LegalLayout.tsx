@@ -16,10 +16,7 @@ interface LegalLayoutProps {
 /**
  * Shared shell for /privacy and /terms — a short table of contents (real
  * navigation, not decoration: both documents are long enough that jumping
- * straight to a section is genuinely useful), then the sections themselves,
- * then a standing notice that this is a launch draft, not reviewed legal
- * advice. Every [LEGAL INPUT REQUIRED] marker inside a page built on this
- * layout is intentional — see LegalInputRequired — not a bug.
+ * straight to a section is genuinely useful), then the sections themselves.
  */
 export function LegalLayout({ title, lastUpdated, intro, sections, children }: LegalLayoutProps) {
   return (
@@ -42,11 +39,6 @@ export function LegalLayout({ title, lastUpdated, intro, sections, children }: L
       </nav>
 
       <div className="prose-legal mt-10 flex flex-col gap-10">{children}</div>
-
-      <div className="mt-12 rounded-xl border border-dashed border-border bg-surface/60 p-5 text-sm text-fg-muted">
-        This document is provided for informational purposes and should be reviewed by qualified
-        legal counsel before launch.
-      </div>
     </div>
   )
 }
@@ -59,14 +51,5 @@ export function LegalSection({ id, title, children }: { id: string; title: strin
         {children}
       </div>
     </section>
-  )
-}
-
-/** Visible, intentional placeholder for a real business/legal fact this document cannot invent — never silently filled in. */
-export function LegalInputRequired({ children }: { children: ReactNode }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-danger/40 bg-danger/10 px-2 py-0.5 text-sm font-medium text-danger">
-      [LEGAL INPUT REQUIRED: {children}]
-    </span>
   )
 }
