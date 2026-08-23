@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Slider } from '@/components/ui/slider'
+import { BidAmountControl } from '@/features/dashboard/BidAmountControl'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 import { getBidSubmitDecision } from '@/lib/bidPayment'
@@ -23,7 +23,10 @@ interface BidAdjustControlProps {
  * lowered amount — this is UX only.
  */
 export function BidAdjustControl({ currentAmount, leaderAmount, onSubmit, submitting }: BidAdjustControlProps) {
-  const max = Math.max(currentAmount, leaderAmount) * 1.6
+  // currentAmount, not 0: staying exactly here is the free "keep bid"
+  // reaffirmation (see getBidSubmitDecision's free_same case) — anything
+  // below it is a lowering attempt the server rejects outright, so the UI
+  // never even offers it as a selectable value.
   const [value, setValue] = useState(currentAmount)
 
   const willTakeLead = value > leaderAmount
@@ -45,13 +48,7 @@ export function BidAdjustControl({ currentAmount, leaderAmount, onSubmit, submit
         <p className="font-numeral text-lg text-sponsored">{formatCurrency(value)}</p>
       </div>
       <div className="mt-3">
-        <Slider
-          min={0}
-          max={Math.ceil(max)}
-          step={1}
-          value={[value]}
-          onValueChange={([v]) => setValue(v)}
-        />
+        <BidAmountControl value={value} onChange={setValue} min={currentAmount} disabled={submitting} />
       </div>
       <div className="mt-2 flex items-center justify-between text-xs text-fg-subtle">
         <span>Current leader: {formatCurrency(leaderAmount)}</span>

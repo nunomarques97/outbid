@@ -56,3 +56,43 @@ export function getBidSubmitDecision({ targetAmount, currentActiveAmount }: BidS
 function roundToCents(value: number): number {
   return Math.round(value * 100) / 100
 }
+
+/** A slider needs generous headroom by default, not just enough to fit today's minimum. */
+const DEFAULT_SLIDER_RANGE = 100
+
+/**
+ * The lowest amount an OPENING bid (StartBidCard — no active bid from this
+ * company yet) should let the user select. €1 is the true floor when
+ * nobody's bidding; once someone is, the floor becomes "enough to take the
+ * lead" rather than a token amount that would just sit behind them —
+ * matches this bid always being framed as "your opening bid," not a
+ * deliberately-losing one.
+ */
+export function getOpeningBidMinimum(leaderAmount: number): number {
+  return leaderAmount > 0 ? leaderAmount + 1 : 1
+}
+
+/**
+ * A slider ceiling that's always comfortably above `min` and never traps
+ * `value` at the far end — extracted so both StartBidCard and
+ * BidAdjustControl compute it identically. Not a business rule (the server
+ * has no maximum at all, see place_bid); purely "give the thumb room to
+ * move" UX.
+ */
+export function getBidSliderMax(min: number, value: number): number {
+  return Math.max(DEFAULT_SLIDER_RANGE, min * 2, Math.ceil(value * 1.1))
+}
+
+/**
+ * Normalizes a user-typed bid amount: rounds to the nearest whole euro
+ * (this product has no fractional-euro bidding anywhere) and clamps up to
+ * `min` — never NaN, never negative, never below the floor the UI is
+ * currently enforcing. The server independently re-validates everything;
+ * this only keeps the input field itself from ever showing a nonsensical
+ * value.
+ */
+export function normalizeBidInput(raw: string, min: number): number {
+  const parsed = Math.round(Number(raw))
+  if (!Number.isFinite(parsed)) return min
+  return Math.max(min, parsed)
+}

@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Rocket } from 'lucide-react'
-import { Slider } from '@/components/ui/slider'
+import { BidAmountControl } from '@/features/dashboard/BidAmountControl'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
+import { getOpeningBidMinimum } from '@/lib/bidPayment'
 
 interface StartBidCardProps {
   placementName: string
@@ -27,12 +28,13 @@ export function StartBidCard({
   submitting,
 }: StartBidCardProps) {
   const hasLeader = leaderAmount > 0
-  // A helpful starting point, not a rule — the server has no minimum beyond
-  // "greater than zero" (place_bid), the user can drag this anywhere. With
-  // no leader, €1 is the true minimum spend to hold sponsored visibility —
-  // default to it directly rather than an arbitrary higher suggestion.
-  const suggestedStart = hasLeader ? leaderAmount + 1 : 1
-  const [value, setValue] = useState(suggestedStart)
+  // The floor this opening bid can be set to — €1 when nobody's bidding,
+  // otherwise enough to take the lead outright (see getOpeningBidMinimum).
+  // Not a server rule (place_bid only requires "> 0"), a product choice:
+  // an opening bid is always framed as competing for the top spot, not a
+  // deliberately-losing token amount.
+  const minAmount = getOpeningBidMinimum(leaderAmount)
+  const [value, setValue] = useState(minAmount)
   const willLead = value > leaderAmount
 
   return (
@@ -60,13 +62,7 @@ export function StartBidCard({
           <p className="font-numeral text-lg text-sponsored">{formatCurrency(value)}</p>
         </div>
         <div className="mt-3">
-          <Slider
-            min={0}
-            max={Math.ceil(Math.max(suggestedStart, leaderAmount) * 1.6)}
-            step={1}
-            value={[value]}
-            onValueChange={([v]) => setValue(v)}
-          />
+          <BidAmountControl value={value} onChange={setValue} min={minAmount} disabled={submitting} />
         </div>
         <div className="mt-2 flex items-center justify-between text-xs text-fg-subtle">
           <span>{hasLeader ? `Current leader: ${formatCurrency(leaderAmount)}` : 'No active bids yet'}</span>

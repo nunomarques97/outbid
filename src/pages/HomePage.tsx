@@ -1,5 +1,6 @@
 import { Hero } from '@/features/home/Hero'
 import { TopBiddersSection } from '@/features/home/TopBiddersSection'
+import { BidForPlacementCta } from '@/features/home/BidForPlacementCta'
 import { CreateCompanyCta } from '@/features/home/CreateCompanyCta'
 import { HowItWorks } from '@/features/home/HowItWorks'
 import { SponsoredMechanicShowcase } from '@/features/home/SponsoredMechanicShowcase'
@@ -15,6 +16,7 @@ export function HomePage() {
       <Hero />
       <CreateCompanyCta />
       <TopBiddersSection />
+      <BidForPlacementCta />
       <HowItWorks />
       <SponsoredMechanicShowcase />
       <RankingsPreview />
