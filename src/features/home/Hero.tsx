@@ -66,60 +66,28 @@ export function Hero() {
           ))}
         </div>
       </div>
-      <div className="relative mx-auto grid max-w-7xl gap-12 px-4 py-14 sm:px-6 md:py-20 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-        <div>
+      <div className="hero-grid relative mx-auto max-w-7xl px-4 py-14 sm:px-6 md:py-20">
+        <div className="hero-title">
           <Badge variant="brand" className="mb-5">
             <TrendingUp className="h-3 w-3" /> Live rankings, updated daily
           </Badge>
           <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight text-fg sm:text-5xl md:text-6xl">
-            Discover what’s actually worth your time — and watch companies fight for the spotlight.
+            <span className="sm:hidden">Watch companies fight for the spotlight.</span>
+            <span className="hidden sm:inline">
+              Discover what’s actually worth your time — and watch companies fight for the spotlight.
+            </span>
           </h1>
-          <p className="mt-5 max-w-xl text-lg text-fg-muted">
+          <p className="mt-5 hidden max-w-xl text-lg text-fg-muted sm:block">
             Repcastr ranks companies by real user votes, then lets businesses bid — openly, in
             euros — for extra visibility. Every sponsored spot is labeled. Every bid is public.
           </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link to="/categories" className={buttonVariants({ size: 'lg' })}>
-              Explore rankings <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link to="/dashboard" className={buttonVariants({ variant: 'secondary', size: 'lg' })}>
-              For Businesses
-            </Link>
-            <Button type="button" variant="sponsored" size="lg" onClick={bidCta.handleClick}>
-              <Rocket className="h-4 w-4" /> Bid for placement
-            </Button>
-            <button
-              type="button"
-              onClick={handleRateRandomCompany}
-              disabled={companies.length === 0}
-              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-fg-muted transition-colors hover:text-fg disabled:pointer-events-none disabled:opacity-50"
-            >
-              <Shuffle className="h-3.5 w-3.5" /> Rate a random company
-            </button>
-          </div>
-
-          <AuthDialog
-            open={bidCta.authOpen}
-            onOpenChange={bidCta.setAuthOpen}
-            title="Sign in to bid for placement"
-            description="Sign in or create an account, then set up your company to start bidding on Repcastr."
-          />
-          <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-3 text-sm text-fg-muted">
-            {companiesQuery.data !== undefined && (
-              <span><strong className="font-numeral text-fg">{companies.length}</strong> companies ranked</span>
-            )}
-            {categoryCount !== undefined && (
-              <span><strong className="font-numeral text-fg">{categoryCount}</strong> categories</span>
-            )}
-            <span><strong className="font-numeral text-fg">100%</strong> transparent bids</span>
-          </div>
         </div>
 
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="rounded-2xl border border-border bg-surface p-5 shadow-2xl shadow-black/40"
+          className="hero-panel rounded-2xl border border-border bg-surface p-5 shadow-2xl shadow-black/40"
         >
           <div className="mb-4 flex items-center justify-between">
             <p className="text-xs font-bold uppercase tracking-widest text-fg-muted">Top bidders</p>
@@ -203,6 +171,44 @@ export function Hero() {
             changes — live.
           </p>
         </motion.div>
+
+        <div className="hero-buttons">
+          <div className="flex flex-wrap items-center gap-3">
+            <Link to="/categories" className={buttonVariants({ size: 'lg' })}>
+              Explore rankings <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link to="/dashboard" className={buttonVariants({ variant: 'secondary', size: 'lg' })}>
+              For Businesses
+            </Link>
+            <Button type="button" variant="sponsored" size="lg" onClick={bidCta.handleClick}>
+              <Rocket className="h-4 w-4" /> Bid for placement
+            </Button>
+            <button
+              type="button"
+              onClick={handleRateRandomCompany}
+              disabled={companies.length === 0}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-fg-muted transition-colors hover:text-fg disabled:pointer-events-none disabled:opacity-50"
+            >
+              <Shuffle className="h-3.5 w-3.5" /> Rate a random company
+            </button>
+          </div>
+
+          <AuthDialog
+            open={bidCta.authOpen}
+            onOpenChange={bidCta.setAuthOpen}
+            title="Sign in to bid for placement"
+            description="Sign in or create an account, then set up your company to start bidding on Repcastr."
+          />
+          <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-3 text-sm text-fg-muted">
+            {companiesQuery.data !== undefined && (
+              <span><strong className="font-numeral text-fg">{companies.length}</strong> companies ranked</span>
+            )}
+            {categoryCount !== undefined && (
+              <span><strong className="font-numeral text-fg">{categoryCount}</strong> categories</span>
+            )}
+            <span><strong className="font-numeral text-fg">100%</strong> transparent bids</span>
+          </div>
+        </div>
       </div>
     </section>
   )

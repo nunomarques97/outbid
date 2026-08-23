@@ -63,3 +63,36 @@
     letter-spacing: -0.01em;
   }
 }
+
+@layer components {
+  /*
+   * Hero's mobile order is title -> top bidders panel -> CTA buttons (in
+   * that order), while desktop keeps the original two-column layout (title
+   * + buttons stacked in the left column, panel to the right). A named-area
+   * grid lets one DOM order serve both without duplicating any markup.
+   */
+  .hero-grid {
+    display: grid;
+    gap: 2rem;
+    grid-template-areas: "title" "panel" "buttons";
+  }
+  .hero-title {
+    grid-area: title;
+  }
+  .hero-panel {
+    grid-area: panel;
+  }
+  .hero-buttons {
+    grid-area: buttons;
+  }
+
+  @media (min-width: 64rem) {
+    .hero-grid {
+      grid-template-areas: "title panel" "buttons panel";
+      grid-template-columns: 1.1fr 0.9fr;
+      align-items: center;
+      column-gap: 3rem;
+      row-gap: 2rem;
+    }
+  }
+}
