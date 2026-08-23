@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { LegalLayout, LegalSection, LegalInputRequired } from '@/components/legal/LegalLayout'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
-import { CONTACT_EMAIL } from '@/lib/contact'
+import { SUPPORT_EMAIL, PRIVACY_EMAIL } from '@/lib/contact'
 
 const SECTIONS = [
   { id: 'who-we-are', title: 'Who we are' },
@@ -38,13 +38,16 @@ export function PrivacyPage() {
       <LegalSection id="who-we-are" title="Who we are">
         <p>
           Repcastr is a platform for discovering companies through community rankings and reviews,
-          with transparently labeled sponsored placement. It's currently operated by an individual
-          based in Portugal, not (yet) a registered company.
+          with transparently labeled sponsored placement. It's currently operated personally by
+          Nuno Daniel Oliveira Marques, based in Portugal — not through a registered company.
         </p>
         <p>
-          Registered business entity, address, and governing jurisdiction, once one exists:{' '}
-          <LegalInputRequired>legal business name and address</LegalInputRequired>
+          Fiscal/establishment address (Portugal): Rua da Aldeia n.º 193, Longos, 4805-204,
+          Portugal. This is the operator's fiscal/establishment address, published here at the
+          operator's own choice — it is not a registered company address (Repcastr is not
+          currently a registered legal entity) and is not published as a residential address.
         </p>
+        <p>No Data Protection Officer (DPO) is currently designated.</p>
       </LegalSection>
 
       <LegalSection id="information-we-collect" title="Information we collect">
@@ -104,7 +107,8 @@ export function PrivacyPage() {
           Reports you file are visible only to you and to whoever manually reviews reports — there
           is no public list of reports, and the person or content you report is not automatically
           notified who reported them. There is no dedicated moderation team yet; reports are
-          reviewed directly by the operator.
+          reviewed directly by the operator, reachable at{' '}
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="text-brand hover:underline">{SUPPORT_EMAIL}</a>.
         </p>
       </LegalSection>
 
@@ -118,7 +122,15 @@ export function PrivacyPage() {
       </LegalSection>
 
       <LegalSection id="retention" title="Data retention">
-        <p>How long we keep your information after account inactivity or deletion: <LegalInputRequired>data retention period</LegalInputRequired></p>
+        <p>
+          Repcastr doesn't apply a single arbitrary retention period to everything. Instead,
+          information is kept for as long as it's needed: for as long as your account is active
+          and the data serves the purpose it was collected for (operating your account, showing
+          your reviews/votes/saves), and afterward for as long as needed to meet legal, accounting,
+          fraud-prevention, or dispute-resolution obligations where applicable. Deleting your
+          account (see below) removes account-linked data immediately, except records — like
+          payment history — that are kept independently for accounting purposes.
+        </p>
       </LegalSection>
 
       <LegalSection id="deletion" title="Account & data deletion">
@@ -131,7 +143,7 @@ export function PrivacyPage() {
           If you manage a company, self-service deletion is intentionally blocked: deleting your
           account would leave your company without an owner and disconnect it from its sponsored
           bid and payment history. Email{' '}
-          <a href={`mailto:${CONTACT_EMAIL}`} className="text-brand hover:underline">{CONTACT_EMAIL}</a>{' '}
+          <a href={`mailto:${PRIVACY_EMAIL}`} className="text-brand hover:underline">{PRIVACY_EMAIL}</a>{' '}
           to request deletion in this case, and we'll handle the company transfer/closure manually
           first.
         </p>
@@ -144,14 +156,20 @@ export function PrivacyPage() {
 
       <LegalSection id="your-rights" title="Your rights">
         <p>
-          Depending on where you live, you may have rights to access, correct, export, or delete
-          your personal information. Applicable law and the process for exercising these rights:{' '}
-          <LegalInputRequired>applicable privacy law and rights process</LegalInputRequired>
+          Repcastr is operated from Portugal, an EU member state, so EU/Portuguese data protection
+          law (GDPR as implemented in Portugal) applies to how your personal data is handled. You
+          may have rights to access, correct, export, or delete your personal information, and to
+          object to or restrict certain processing. To exercise any of these, email{' '}
+          <a href={`mailto:${PRIVACY_EMAIL}`} className="text-brand hover:underline">{PRIVACY_EMAIL}</a>.
+        </p>
+        <p>
+          The detailed internal process/timeline for handling such a request:{' '}
+          <LegalInputRequired>formal data-subject-request process and response timeline</LegalInputRequired>
         </p>
       </LegalSection>
 
       <LegalSection id="children" title="Children's privacy">
-        <p>Minimum age to use Repcastr: <LegalInputRequired>minimum age policy</LegalInputRequired></p>
+        <p>Repcastr is intended for users aged 13 and older. It is not directed at children under 13.</p>
       </LegalSection>
 
       <LegalSection id="changes" title="Changes to this policy">
@@ -163,12 +181,12 @@ export function PrivacyPage() {
 
       <LegalSection id="contact" title="Contact">
         <p>
-          Privacy questions or requests:{' '}
-          <a href={`mailto:${CONTACT_EMAIL}`} className="text-brand hover:underline">{CONTACT_EMAIL}</a>
+          Privacy questions or data requests:{' '}
+          <a href={`mailto:${PRIVACY_EMAIL}`} className="text-brand hover:underline">{PRIVACY_EMAIL}</a>
         </p>
         <p className="text-sm text-fg-subtle">
-          This is the operator's own address, used until a dedicated privacy mailbox exists — not
-          a support department.
+          This mailbox reaches the operator directly — Repcastr doesn't have a separate privacy
+          department, just one person reading this inbox.
         </p>
         <p className="text-sm">
           See also <Link to="/terms" className="text-brand hover:underline">Terms of Service</Link>.

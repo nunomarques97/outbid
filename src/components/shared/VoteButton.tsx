@@ -28,6 +28,7 @@ export function VoteButton({ companySlug, baseVotes, size = 'md' }: VoteButtonPr
           toggle()
         }}
         aria-pressed={voted}
+        aria-label={voted ? 'Remove upvote' : 'Upvote company'}
         className={cn(
           'flex flex-col items-center justify-center gap-0.5 rounded-lg border transition-colors',
           voted

@@ -25,6 +25,7 @@ export function ReportButton({ targetType, targetId, className, withLabel }: Rep
     <>
       <button
         type="button"
+        aria-label={`Report this ${targetType}`}
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()

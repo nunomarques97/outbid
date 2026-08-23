@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { LoadingState } from '@/components/shared/QueryStates'
 import { useAuth } from '@/features/auth/useAuth'
 import { useMyCompany } from '@/lib/supabase/hooks'
-import { CONTACT_EMAIL } from '@/lib/contact'
+import { PRIVACY_EMAIL } from '@/lib/contact'
 import { useDeleteAccount } from './useProfileMutations'
 
 interface DeleteAccountDialogProps {
@@ -58,10 +58,10 @@ export function DeleteAccountDialog({ open, onOpenChange }: DeleteAccountDialogP
               it out properly:
             </p>
             <a
-              href={`mailto:${CONTACT_EMAIL}`}
+              href={`mailto:${PRIVACY_EMAIL}`}
               className="mt-3 inline-block text-sm font-semibold text-brand hover:underline"
             >
-              {CONTACT_EMAIL}
+              {PRIVACY_EMAIL}
             </a>
             <div className="mt-6 flex justify-end">
               <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>

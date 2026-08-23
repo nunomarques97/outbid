@@ -11,7 +11,10 @@ export function Slider({ className, ...props }: ComponentProps<typeof SliderPrim
       <SliderPrimitive.Track className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-surface-raised">
         <SliderPrimitive.Range className="absolute h-full bg-sponsored" />
       </SliderPrimitive.Track>
-      <SliderPrimitive.Thumb className="block h-5 w-5 rounded-full border-2 border-sponsored bg-bg shadow transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sponsored" />
+      <SliderPrimitive.Thumb
+        aria-label="Bid amount"
+        className="block h-5 w-5 rounded-full border-2 border-sponsored bg-bg shadow transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sponsored"
+      />
     </SliderPrimitive.Root>
   )
 }

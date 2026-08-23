@@ -39,20 +39,33 @@ export function EditProfileDialog({ profile, open, onOpenChange }: EditProfileDi
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([])
 
   // Adjusting state during render (same pattern as EditCompanyDialog /
-  // EditDisplayNameDialog) — reseeds every field whenever the dialog opens
-  // or the interests query resolves, so a cancelled edit never lingers.
-  const [seeded, setSeeded] = useState<{ open: boolean; data: string[] | undefined }>({
-    open,
-    data: interestsQuery.data,
-  })
-  if (seeded.open !== open || seeded.data !== interestsQuery.data) {
-    setSeeded({ open, data: interestsQuery.data })
+  // EditDisplayNameDialog) — reseeds every field when the dialog opens, so
+  // a cancelled edit never lingers. Deliberately keyed on `open` alone, not
+  // on interestsQuery.data: that query can refetch (e.g. on window focus)
+  // while the dialog is already open, and refetching hands back a new
+  // array reference even when the content is identical — keying the reset
+  // on that reference would silently discard whatever the user had just
+  // changed (display name, bio, visibility) mid-edit. Interests still get
+  // seeded exactly once per open, either immediately if already loaded or
+  // the first time this open's data becomes available, tracked separately
+  // below so a later refetch can't re-trigger it either.
+  const [seededOpen, setSeededOpen] = useState(open)
+  const [interestsSeededForThisOpen, setInterestsSeededForThisOpen] = useState(false)
+  if (seededOpen !== open) {
+    setSeededOpen(open)
     if (open) {
       setDisplayName(profile.displayName)
       setBio(profile.bio ?? '')
       setIsPublic(profile.isPublic)
-      if (interestsQuery.data !== undefined) setSelectedCategoryIds(interestsQuery.data)
+      setInterestsSeededForThisOpen(false)
+      if (interestsQuery.data !== undefined) {
+        setSelectedCategoryIds(interestsQuery.data)
+        setInterestsSeededForThisOpen(true)
+      }
     }
+  } else if (open && !interestsSeededForThisOpen && interestsQuery.data !== undefined) {
+    setInterestsSeededForThisOpen(true)
+    setSelectedCategoryIds(interestsQuery.data)
   }
 
   const updateProfileMutation = useUpdateProfile()

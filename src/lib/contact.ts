@@ -1,7 +1,10 @@
 /**
- * The one place this value is defined — every UI surface that shows a
- * contact address reads it from here rather than repeating the literal
- * string. Temporary: the operator's own address, used until a domain
- * mailbox (e.g. support@repcastr.com) exists. See Phase 36.
+ * The one place these values are defined — every UI surface that shows a
+ * contact address reads from here rather than repeating a literal string.
+ * Both are real domain mailboxes (Cloudflare Email Routing -> the
+ * operator's own inbox), set up in Phase 37 specifically so the
+ * operator's personal address never needs to appear in public-facing UI
+ * again — see Phase 36 for the prior, temporary state.
  */
-export const CONTACT_EMAIL = 'nuno.d.o.marques1997@gmail.com'
+export const SUPPORT_EMAIL = 'support@repcastr.com'
+export const PRIVACY_EMAIL = 'privacy@repcastr.com'

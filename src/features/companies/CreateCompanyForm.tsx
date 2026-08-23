@@ -206,7 +206,15 @@ export function CreateCompanyForm() {
         />
       </Field>
 
-      <Field label="Categories" error={errors.categoryIds}>
+      {/* Not a Field/<label>: a <label> implicitly associates with every
+          labelable descendant, and <button> is labelable — wrapping the
+          whole multi-button CategoryChipPicker in one would give every
+          category chip the same accessible name (this field's own label
+          plus every other category's name concatenated). Matches the
+          plain-<div> pattern EditCompanyDialog/EditProfileDialog already
+          use for the exact same picker. */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium text-fg">Categories</span>
         <p className="-mt-1 mb-2 text-xs text-fg-subtle">
           Choose up to {MAX_COMPANY_CATEGORIES} categories that best describe your company.
         </p>
@@ -217,7 +225,8 @@ export function CreateCompanyForm() {
           max={MAX_COMPANY_CATEGORIES}
           disabled={submitting}
         />
-      </Field>
+        {errors.categoryIds && <span className="text-xs text-danger">{errors.categoryIds}</span>}
+      </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Website" error={errors.website}>

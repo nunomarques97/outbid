@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { LegalLayout, LegalSection, LegalInputRequired } from '@/components/legal/LegalLayout'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
-import { CONTACT_EMAIL } from '@/lib/contact'
+import { SUPPORT_EMAIL, PRIVACY_EMAIL } from '@/lib/contact'
 
 const SECTIONS = [
   { id: 'acceptance', title: 'Acceptance of these terms' },
@@ -39,7 +39,7 @@ export function TermsPage() {
     >
       <LegalSection id="acceptance" title="Acceptance of these terms">
         <p>By creating an account or using Repcastr, you agree to these terms.</p>
-        <p>Minimum age to use the service: <LegalInputRequired>eligibility/minimum age</LegalInputRequired></p>
+        <p>Repcastr is intended for users aged 13 and older.</p>
       </LegalSection>
 
       <LegalSection id="accounts" title="Accounts">
@@ -50,7 +50,7 @@ export function TermsPage() {
           <li>
             You can permanently delete your own account at any time if you don't manage a company.
             If you do manage a company, self-service deletion is blocked — see{' '}
-            <a href={`mailto:${CONTACT_EMAIL}`} className="text-brand hover:underline">{CONTACT_EMAIL}</a>{' '}
+            <a href={`mailto:${PRIVACY_EMAIL}`} className="text-brand hover:underline">{PRIVACY_EMAIL}</a>{' '}
             to request it manually, so your company isn't left ownerless.
           </li>
         </ul>
@@ -97,7 +97,11 @@ export function TermsPage() {
           does not run subscriptions or recurring billing. Repcastr never sees or stores your card
           details.
         </p>
-        <p>Refund policy: <LegalInputRequired>refund policy decision</LegalInputRequired></p>
+        <p>
+          Sponsored bids are one-time purchases. Once a bid is activated, it's generally
+          non-refundable — except where required by applicable law, or where Repcastr charged an
+          incorrect amount. This doesn't waive any statutory consumer right you may have.
+        </p>
       </LegalSection>
 
       <LegalSection id="prohibited" title="Prohibited conduct">
@@ -128,14 +132,18 @@ export function TermsPage() {
         </p>
         <p>
           Moderation/reporting contact:{' '}
-          <a href={`mailto:${CONTACT_EMAIL}`} className="text-brand hover:underline">{CONTACT_EMAIL}</a>
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="text-brand hover:underline">{SUPPORT_EMAIL}</a>
         </p>
       </LegalSection>
 
       <LegalSection id="termination" title="Suspension & termination">
         <p>
-          Repcastr may suspend or terminate an account that violates these terms. The formal
-          process and notice period for this: <LegalInputRequired>suspension/termination policy</LegalInputRequired>
+          Repcastr may temporarily restrict or terminate an account for serious or repeated
+          violations of these terms, fraud, manipulation of votes/reviews/bidding, illegal
+          activity, or other threats to the integrity of the platform. Where reasonably possible,
+          you'll be told why and given a way to reach us — {' '}
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="text-brand hover:underline">{SUPPORT_EMAIL}</a>{' '}
+          — to ask about or contest the decision.
         </p>
       </LegalSection>
 
@@ -157,7 +165,7 @@ export function TermsPage() {
       </LegalSection>
 
       <LegalSection id="law" title="Governing law">
-        <p>These terms are governed by: <LegalInputRequired>governing law / jurisdiction</LegalInputRequired></p>
+        <p>These terms are governed by the laws of Portugal.</p>
       </LegalSection>
 
       <LegalSection id="changes" title="Changes to these terms">
@@ -170,11 +178,11 @@ export function TermsPage() {
       <LegalSection id="contact" title="Contact">
         <p>
           Questions about these terms:{' '}
-          <a href={`mailto:${CONTACT_EMAIL}`} className="text-brand hover:underline">{CONTACT_EMAIL}</a>
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="text-brand hover:underline">{SUPPORT_EMAIL}</a>
         </p>
         <p className="text-sm text-fg-subtle">
-          This is the operator's own address, used until a dedicated mailbox exists — not a
-          support department.
+          This mailbox reaches the operator directly — Repcastr doesn't have a separate support
+          department, just one person reading this inbox.
         </p>
         <p className="text-sm">
           See also <Link to="/privacy" className="text-brand hover:underline">Privacy Policy</Link>.
