@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { LegalLayout, LegalSection, LegalInputRequired } from '@/components/legal/LegalLayout'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
+import { CONTACT_EMAIL } from '@/lib/contact'
 
 const SECTIONS = [
   { id: 'acceptance', title: 'Acceptance of these terms' },
@@ -26,7 +27,7 @@ export function TermsPage() {
   return (
     <LegalLayout
       title="Terms of Service"
-      lastUpdated="August 22, 2026"
+      lastUpdated="August 23, 2026"
       sections={SECTIONS}
       intro={
         <p>
@@ -46,6 +47,12 @@ export function TermsPage() {
           <li>You create an account with an email and password, or by signing in with Google.</li>
           <li>You're responsible for keeping your login credentials secure.</li>
           <li>Each account may manage at most one company profile — this is enforced by the platform, not just a suggestion.</li>
+          <li>
+            You can permanently delete your own account at any time if you don't manage a company.
+            If you do manage a company, self-service deletion is blocked — see{' '}
+            <a href={`mailto:${CONTACT_EMAIL}`} className="text-brand hover:underline">{CONTACT_EMAIL}</a>{' '}
+            to request it manually, so your company isn't left ownerless.
+          </li>
         </ul>
       </LegalSection>
 
@@ -101,6 +108,7 @@ export function TermsPage() {
           <li>Impersonating another person or business.</li>
           <li>Attempting to bypass the one-company-per-account or category limits.</li>
           <li>Scraping or systematically extracting data from the platform outside normal use.</li>
+          <li>Filing false or bad-faith reports against another user's or company's content.</li>
         </ul>
       </LegalSection>
 
@@ -113,11 +121,15 @@ export function TermsPage() {
 
       <LegalSection id="moderation" title="Moderation & enforcement">
         <p>
-          Repcastr may remove content that violates these terms. Today, there is no in-app "report"
-          button — moderation is handled manually on a best-effort basis rather than through
-          automated detection.
+          You can report a review, company profile, or deal directly from its page. Reports are
+          reviewed manually — there is no automated moderation and, as of today, no dedicated
+          moderation team beyond the operator. Repcastr may remove content or take other action on
+          an account that violates these terms based on a report or otherwise.
         </p>
-        <p>Moderation/reporting contact: <LegalInputRequired>moderation contact channel</LegalInputRequired></p>
+        <p>
+          Moderation/reporting contact:{' '}
+          <a href={`mailto:${CONTACT_EMAIL}`} className="text-brand hover:underline">{CONTACT_EMAIL}</a>
+        </p>
       </LegalSection>
 
       <LegalSection id="termination" title="Suspension & termination">
@@ -156,7 +168,14 @@ export function TermsPage() {
       </LegalSection>
 
       <LegalSection id="contact" title="Contact">
-        <p>Questions about these terms: <LegalInputRequired>legal/support contact email</LegalInputRequired></p>
+        <p>
+          Questions about these terms:{' '}
+          <a href={`mailto:${CONTACT_EMAIL}`} className="text-brand hover:underline">{CONTACT_EMAIL}</a>
+        </p>
+        <p className="text-sm text-fg-subtle">
+          This is the operator's own address, used until a dedicated mailbox exists — not a
+          support department.
+        </p>
         <p className="text-sm">
           See also <Link to="/privacy" className="text-brand hover:underline">Privacy Policy</Link>.
         </p>

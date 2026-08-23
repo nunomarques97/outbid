@@ -23,6 +23,7 @@ import { CompanyWebsiteLink } from '@/components/shared/CompanyWebsiteLink'
 import { OrganicEntryCard } from '@/components/leaderboard/OrganicEntryCard'
 import { CompanyRatingBadge } from '@/features/reviews/CompanyRatingBadge'
 import { CompanyReviewsSection } from '@/features/reviews/CompanyReviewsSection'
+import { ReportButton } from '@/features/reports/ReportButton'
 import { buttonVariants } from '@/components/ui/button'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
@@ -159,9 +160,12 @@ function CompanyProfileContent({ company }: { company: Company }) {
             )}
           </div>
         </div>
-        <div className="flex shrink-0 gap-2">
-          <VoteButton companySlug={company.slug} baseVotes={company.organicVotes} />
-          <SaveButton companyId={company.id} />
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <div className="flex gap-2">
+            <VoteButton companySlug={company.slug} baseVotes={company.organicVotes} />
+            <SaveButton companyId={company.id} />
+          </div>
+          <ReportButton targetType="company" targetId={company.id} withLabel />
         </div>
       </div>
 

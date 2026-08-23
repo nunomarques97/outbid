@@ -7,6 +7,7 @@ import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { LoadingState } from '@/components/shared/QueryStates'
 import { EditProfileDialog } from '@/features/profile/EditProfileDialog'
+import { DeleteAccountDialog } from '@/features/profile/DeleteAccountDialog'
 import { ProfileReviewsSection } from '@/features/profile/ProfileReviewsSection'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
@@ -19,6 +20,7 @@ export function UserProfilePage() {
   const { user } = useAuth()
   const profileQuery = usePublicProfile(username)
   const [editOpen, setEditOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
   useDocumentTitle(profileQuery.data ? `${profileQuery.data.displayName} (@${profileQuery.data.username})` : undefined)
 
   if (profileQuery.isLoading) {
@@ -119,7 +121,20 @@ export function UserProfilePage() {
         />
       </div>
 
+      {isOwn && (
+        <div className="mt-10 border-t border-border pt-6">
+          <button
+            type="button"
+            onClick={() => setDeleteOpen(true)}
+            className="text-xs text-fg-subtle transition-colors hover:text-danger"
+          >
+            Delete account
+          </button>
+        </div>
+      )}
+
       {isOwn && <EditProfileDialog profile={profile} open={editOpen} onOpenChange={setEditOpen} />}
+      {isOwn && <DeleteAccountDialog open={deleteOpen} onOpenChange={setDeleteOpen} />}
     </div>
   )
 }

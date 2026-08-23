@@ -491,6 +491,21 @@ export interface Database {
         Args: { p_company_id: string; p_category_ids: string[] }
         Returns: undefined
       }
+      create_report: {
+        Args: { p_target_type: string; p_target_id: string; p_reason: string; p_description: string | null }
+        Returns: {
+          id: string
+          reporter_user_id: string
+          target_type: string
+          target_id: string
+          reason: string
+          description: string | null
+          status: string
+          created_at: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+        }
+      }
     }
     Enums: Record<string, never>
   }

@@ -1,5 +1,6 @@
 import { supabase } from './client'
 import { toReview, type Review } from './queries'
+import { extractEdgeFunctionErrorMessage } from '../edgeFunctionError'
 
 /**
  * Toggle the current user's upvote on a company: adds it if absent, removes
@@ -427,4 +428,45 @@ export async function setUserInterests(userId: string, categoryIds: string[]): P
     .from('user_interests')
     .insert(categoryIds.map((categoryId) => ({ user_id: userId, category_id: categoryId })))
   if (insertError) throw insertError
+}
+
+/**
+ * Permanently deletes the signed-in user's own account via the
+ * delete-account Edge Function — the only path that can, since deleting
+ * an auth.users row needs the service-role Admin API, never reachable
+ * from the client directly. The function itself refuses (409) if the
+ * caller manages a company; that check is server-side and authoritative,
+ * this is only a courtesy pre-check so the UI never even offers the
+ * button in that case (see DeleteAccountDialog).
+ */
+export async function deleteMyAccount(): Promise<void> {
+  const { error } = await supabase.functions.invoke('delete-account', { method: 'POST' })
+  if (!error) return
+  throw new Error(await extractEdgeFunctionErrorMessage(error, 'Could not delete account'))
+}
+
+export type ReportTargetType = 'review' | 'company' | 'deal'
+export type ReportReason = 'spam' | 'fake_or_misleading' | 'harassment' | 'illegal_content' | 'impersonation' | 'other'
+
+/**
+ * Submits a report via the create_report RPC — the only write path onto
+ * public.reports (see 20260822120000_reports.sql). All validation
+ * (target existence, valid type/reason, duplicate-pending rejection)
+ * happens server-side; this just forwards the call and lets its error
+ * surface as-is, since the RPC's messages are already written for a user
+ * to read directly ("You already have a pending report for this").
+ */
+export async function createReport(
+  targetType: ReportTargetType,
+  targetId: string,
+  reason: ReportReason,
+  description: string | null,
+): Promise<void> {
+  const { error } = await supabase.rpc('create_report', {
+    p_target_type: targetType,
+    p_target_id: targetId,
+    p_reason: reason,
+    p_description: description,
+  })
+  if (error) throw error
 }

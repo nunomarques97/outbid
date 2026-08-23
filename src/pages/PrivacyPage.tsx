@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { LegalLayout, LegalSection, LegalInputRequired } from '@/components/legal/LegalLayout'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
+import { CONTACT_EMAIL } from '@/lib/contact'
 
 const SECTIONS = [
   { id: 'who-we-are', title: 'Who we are' },
@@ -8,6 +9,7 @@ const SECTIONS = [
   { id: 'cookies-and-storage', title: 'Cookies & local storage' },
   { id: 'how-we-use-it', title: 'How we use information' },
   { id: 'what-is-public', title: 'What other people can see' },
+  { id: 'reporting', title: 'Reporting content' },
   { id: 'third-parties', title: 'Third-party services' },
   { id: 'retention', title: 'Data retention' },
   { id: 'deletion', title: 'Account & data deletion' },
@@ -22,24 +24,25 @@ export function PrivacyPage() {
   return (
     <LegalLayout
       title="Privacy Policy"
-      lastUpdated="August 22, 2026"
+      lastUpdated="August 23, 2026"
       sections={SECTIONS}
       intro={
         <p>
           This page describes what information Repcastr actually collects and why, based on how
           the product is built today. It is a launch draft: sections marked{' '}
-          <LegalInputRequired>example</LegalInputRequired> need real business or legal details
-          filled in — none of that has been invented here.
+          <LegalInputRequired>example</LegalInputRequired> need real legal details filled in —
+          none of that has been invented here.
         </p>
       }
     >
       <LegalSection id="who-we-are" title="Who we are">
         <p>
           Repcastr is a platform for discovering companies through community rankings and reviews,
-          with transparently labeled sponsored placement.
+          with transparently labeled sponsored placement. It's currently operated by an individual
+          based in Portugal, not (yet) a registered company.
         </p>
         <p>
-          Legal entity name, registered address, and jurisdiction:{' '}
+          Registered business entity, address, and governing jurisdiction, once one exists:{' '}
           <LegalInputRequired>legal business name and address</LegalInputRequired>
         </p>
       </LegalSection>
@@ -53,6 +56,7 @@ export function PrivacyPage() {
           <li><strong className="text-fg">Reviews:</strong> a star rating, a title, and a body you write about a company. Your display name at the time you post is stored with the review permanently, so a later name change doesn't rewrite past reviews.</li>
           <li><strong className="text-fg">Votes:</strong> which companies you've upvoted and which side you picked in a head-to-head comparison. Votes are tied to your account, not anonymous.</li>
           <li><strong className="text-fg">Saved companies and watched deals:</strong> which companies and deals you've bookmarked.</li>
+          <li><strong className="text-fg">Reports:</strong> if you report a review, company, or deal, we store which account filed it, what was reported, the reason you selected, and any optional description you add.</li>
           <li><strong className="text-fg">Company/advertiser information:</strong> if you create a company profile, its name, description, tagline, website, founding year, logo, and up to two categories.</li>
           <li><strong className="text-fg">Payments:</strong> if you place a sponsored bid, payment is handled entirely by Stripe. Repcastr does not receive or store your card details — only a Stripe reference id, the amount charged, and the payment's status, tied to the company, not to any individual person.</li>
           <li><strong className="text-fg">Technical information:</strong> Repcastr's own code does not run analytics or trackers. Our infrastructure providers (Supabase, and whoever hosts the site) may automatically log standard technical information such as IP addresses, as is normal for any web service.</li>
@@ -95,6 +99,15 @@ export function PrivacyPage() {
         </ul>
       </LegalSection>
 
+      <LegalSection id="reporting" title="Reporting content">
+        <p>
+          Reports you file are visible only to you and to whoever manually reviews reports — there
+          is no public list of reports, and the person or content you report is not automatically
+          notified who reported them. There is no dedicated moderation team yet; reports are
+          reviewed directly by the operator.
+        </p>
+      </LegalSection>
+
       <LegalSection id="third-parties" title="Third-party services">
         <ul className="ml-5 list-disc [&>li]:mt-1.5">
           <li><strong className="text-fg">Supabase</strong> — database, authentication, file storage, and backend hosting.</li>
@@ -110,8 +123,17 @@ export function PrivacyPage() {
 
       <LegalSection id="deletion" title="Account & data deletion">
         <p>
-          Repcastr does not yet have a self-service "delete my account" feature. Until one ships,
-          requests are handled manually: <LegalInputRequired>a real contact address to request account/data deletion</LegalInputRequired>
+          If you don't manage a company, you can permanently delete your own account from your
+          profile page at any time. This removes your profile, reviews, votes, saved companies,
+          watched deals, interests, and reports — immediately and without a recovery option.
+        </p>
+        <p>
+          If you manage a company, self-service deletion is intentionally blocked: deleting your
+          account would leave your company without an owner and disconnect it from its sponsored
+          bid and payment history. Email{' '}
+          <a href={`mailto:${CONTACT_EMAIL}`} className="text-brand hover:underline">{CONTACT_EMAIL}</a>{' '}
+          to request deletion in this case, and we'll handle the company transfer/closure manually
+          first.
         </p>
         <p>
           Payment records tied to a company (amounts charged, status) are financial records and
@@ -140,7 +162,14 @@ export function PrivacyPage() {
       </LegalSection>
 
       <LegalSection id="contact" title="Contact">
-        <p>Privacy questions or requests: <LegalInputRequired>privacy contact email</LegalInputRequired></p>
+        <p>
+          Privacy questions or requests:{' '}
+          <a href={`mailto:${CONTACT_EMAIL}`} className="text-brand hover:underline">{CONTACT_EMAIL}</a>
+        </p>
+        <p className="text-sm text-fg-subtle">
+          This is the operator's own address, used until a dedicated privacy mailbox exists — not
+          a support department.
+        </p>
         <p className="text-sm">
           See also <Link to="/terms" className="text-brand hover:underline">Terms of Service</Link>.
         </p>

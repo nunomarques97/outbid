@@ -4,6 +4,7 @@ import { Pencil, Trash2 } from 'lucide-react'
 import type { Review } from '@/lib/supabase/queries'
 import { StarRating } from '@/components/shared/StarRating'
 import { UserAvatar } from '@/components/shared/UserAvatar'
+import { ReportButton } from '@/features/reports/ReportButton'
 import { formatRelativeTime, cn } from '@/lib/utils'
 
 interface ReviewCardProps {
@@ -85,6 +86,8 @@ export function ReviewCard({ review, isOwn, onEdit, onDelete, deleting, authorUs
             {wasEdited(review) && ' · edited'}
           </span>
         </p>
+
+        {!isOwn && <ReportButton targetType="review" targetId={review.id} />}
 
         {isOwn && (onEdit || onDelete) && (
           <div className="flex shrink-0 items-center gap-1">

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { updateProfile, uploadAvatar, setUserInterests } from '@/lib/supabase/mutations'
+import { updateProfile, uploadAvatar, setUserInterests, deleteMyAccount } from '@/lib/supabase/mutations'
 
 /** Every profile-editing mutation invalidates the same query families, so create/edit can't drift out of sync. */
 function useInvalidateProfileQueries() {
@@ -54,4 +54,13 @@ export function useSetUserInterests() {
     mutationFn: ({ userId, categoryIds }: SetInterestsArgs) => setUserInterests(userId, categoryIds),
     onSuccess: (_result, variables) => invalidate(variables.userId, variables.username),
   })
+}
+
+/**
+ * No query invalidation on success — a deleted account's session is
+ * signed out immediately after (see DeleteAccountDialog), which already
+ * clears/refetches everything that mattered.
+ */
+export function useDeleteAccount() {
+  return useMutation({ mutationFn: deleteMyAccount })
 }

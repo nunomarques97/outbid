@@ -8,6 +8,7 @@ import { useMyWatchedDealIds, useWatchDeal, useUnwatchDeal } from '@/features/de
 import { getDealCtaState } from '@/lib/dealState'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { CompanyWebsiteLink } from '@/components/shared/CompanyWebsiteLink'
+import { ReportButton } from '@/features/reports/ReportButton'
 import { Button } from '@/components/ui/button'
 import { formatCompactNumber, cn } from '@/lib/utils'
 
@@ -85,9 +86,12 @@ export function DealCard({ deal, company }: { deal: Deal; company: Company }) {
       <p className="font-semibold leading-snug text-fg">{deal.title}</p>
       <p className="mt-1.5 flex-1 text-sm text-fg-muted">{deal.description}</p>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <span className="flex items-center gap-1 text-xs text-fg-subtle">
-          <Clock className="h-3.5 w-3.5" />
-          {expired ? 'Expired' : left > 0 ? `Ends in ${left}d` : 'Ends today'}
+        <span className="flex items-center gap-2 text-xs text-fg-subtle">
+          <span className="flex items-center gap-1">
+            <Clock className="h-3.5 w-3.5" />
+            {expired ? 'Expired' : left > 0 ? `Ends in ${left}d` : 'Ends today'}
+          </span>
+          <ReportButton targetType="deal" targetId={deal.id} />
         </span>
 
         <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
