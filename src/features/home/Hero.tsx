@@ -13,6 +13,15 @@ import { formatCurrency } from '@/lib/utils'
 const HERO_STATIC_COUNT = 3
 const HERO_MARQUEE_MAX = 20
 
+/**
+ * Purely decorative — abstract bar heights suggesting a competitive
+ * leaderboard behind the Top Bidders panel. Never real bid amounts (no
+ * numbers are shown, no company is implied), just a visual echo of
+ * "companies ranked by height" that ties the background to what the panel
+ * in front of it is actually showing.
+ */
+const RANKING_BAR_HEIGHTS = [28, 44, 34, 56, 40, 64, 30, 48]
+
 export function Hero() {
   const navigate = useNavigate()
   const companiesQuery = useAllCompanies()
@@ -37,7 +46,22 @@ export function Hero() {
 
   return (
     <section className="relative overflow-hidden border-b border-border">
-      <div className="pointer-events-none absolute -top-32 left-1/2 h-96 w-[42rem] -translate-x-1/2 rounded-full bg-brand/20 blur-3xl" />
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {/* Premium dual-tone glow — brand + sponsored, replacing the old flat coral circle */}
+        <div className="absolute -top-32 left-1/2 h-96 w-[42rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-brand/20 via-sponsored/10 to-transparent blur-3xl" />
+        {/* Abstract ranking bars behind the Top Bidders panel — visual echo of companies competing for placement, no real amounts implied */}
+        <div className="absolute bottom-0 right-[4%] hidden items-end gap-2.5 opacity-[0.14] lg:flex">
+          {RANKING_BAR_HEIGHTS.map((h, i) => (
+            <motion.div
+              key={i}
+              className="w-3.5 rounded-t-full bg-gradient-to-t from-brand to-sponsored"
+              style={{ height: h }}
+              animate={{ height: [h, h * 1.2, h] }}
+              transition={{ duration: 3.5 + i * 0.25, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 }}
+            />
+          ))}
+        </div>
+      </div>
       <div className="relative mx-auto grid max-w-7xl gap-12 px-4 py-14 sm:px-6 md:py-20 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
         <div>
           <Badge variant="brand" className="mb-5">

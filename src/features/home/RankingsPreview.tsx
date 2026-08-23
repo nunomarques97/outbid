@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import * as Icons from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Company } from '@/mocks/types'
 import { useCategories, useAllCompanies, usePlacements, useActiveBids, useAllCompanyRatingSummaries } from '@/lib/supabase/hooks'
 import { getGlobalPlacement, type CompanyRatingSummary } from '@/lib/supabase/queries'
@@ -18,6 +20,7 @@ import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 // primary place to browse a category's full ranking (that's /categories/:slug).
 const STATIC_ORGANIC_COUNT = 2
 const MARQUEE_ORGANIC_MAX = 7
+const CATEGORY_GROUP_SIZE = 3
 
 export function RankingsPreview() {
   const categoriesQuery = useCategories()
@@ -27,6 +30,9 @@ export function RankingsPreview() {
   // Supplementary, same as every other discovery surface — not part of the
   // loading/error gate below.
   const ratingSummariesQuery = useAllCompanyRatingSummaries()
+  // Declared unconditionally, before the loading/error early returns below —
+  // hooks can't follow a conditional return.
+  const [page, setPage] = useState(0)
 
   if (categoriesQuery.isLoading || companiesQuery.isLoading || placementsQuery.isLoading || bidsQuery.isLoading) {
     return <LoadingState label="Loading rankings…" />
@@ -41,23 +47,60 @@ export function RankingsPreview() {
   const globalPlacement = getGlobalPlacement(placementsQuery.data ?? [])
   if (allCategories.length === 0) return null
 
-  // The three categories with the most active commercial interest (sum of
-  // eligible companies' global bids) lead the homepage — not every
+  // Categories with active commercial interest (sum of eligible companies'
+  // global bids) lead the homepage, ranked highest-spend first — not every
   // category equally. When nothing has an active bid yet (a fresh
-  // marketplace), fall back to the first three so the section still shows
-  // real community rankings instead of going empty.
-  const topByBids = globalPlacement
-    ? getTopCategoriesByBidTotal(companies, bids, globalPlacement.id, allCategories, 3)
+  // marketplace), fall back to every category in its existing order so the
+  // section still shows real community rankings instead of going empty.
+  // Either way this is the FULL ordered list, not just the first group —
+  // the arrows below page through it three at a time.
+  const rankedByBids = globalPlacement
+    ? getTopCategoriesByBidTotal(companies, bids, globalPlacement.id, allCategories, allCategories.length).map(
+        (t) => t.category,
+      )
     : []
-  const categories = topByBids.length > 0 ? topByBids.map((t) => t.category) : allCategories.slice(0, 3)
+  const orderedCategories = rankedByBids.length > 0 ? rankedByBids : allCategories
+
+  const totalPages = Math.max(1, Math.ceil(orderedCategories.length / CATEGORY_GROUP_SIZE))
+  const currentPage = Math.min(page, totalPages - 1)
+  const isFirstPage = currentPage === 0
+  const isLastPage = currentPage === totalPages - 1
+  const categories = orderedCategories.slice(
+    currentPage * CATEGORY_GROUP_SIZE,
+    currentPage * CATEGORY_GROUP_SIZE + CATEGORY_GROUP_SIZE,
+  )
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-bold tracking-tight text-fg sm:text-3xl">Top rankings by category</h2>
-        <Link to="/categories" className="text-sm font-semibold text-brand hover:underline">
-          Browse all categories →
-        </Link>
+        <div className="flex shrink-0 items-center gap-3">
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                aria-label="Previous categories"
+                disabled={isFirstPage}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-fg-muted transition-colors hover:border-brand/30 hover:text-fg disabled:pointer-events-none disabled:opacity-30"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                aria-label="Next categories"
+                disabled={isLastPage}
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-fg-muted transition-colors hover:border-brand/30 hover:text-fg disabled:pointer-events-none disabled:opacity-30"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          <Link to="/categories" className="text-sm font-semibold text-brand hover:underline">
+            Browse all categories →
+          </Link>
+        </div>
       </div>
       <div className="grid gap-5 sm:grid-cols-3">
         {categories.map((category) => {

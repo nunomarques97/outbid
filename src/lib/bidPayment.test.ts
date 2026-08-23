@@ -54,4 +54,21 @@ describe('getBidSubmitDecision', () => {
   it('rounds the charge amount to cents', () => {
     expect(getBidSubmitDecision({ targetAmount: 10.005, currentActiveAmount: 10 }).chargeAmount).toBeCloseTo(0.01, 2)
   })
+
+  // €1 minimum bid / €1 increment (see BidAdjustControl/StartBidCard) — this
+  // function was already amount-agnostic, but these pin down the exact
+  // low end of the range the UI now offers.
+  it('a brand new €1 bid charges exactly €1 — the true minimum spend', () => {
+    expect(getBidSubmitDecision({ targetAmount: 1, currentActiveAmount: null })).toEqual({
+      action: 'paid_raise',
+      chargeAmount: 1,
+    })
+  })
+
+  it('raising 1 -> 2 charges only the €1 delta', () => {
+    expect(getBidSubmitDecision({ targetAmount: 2, currentActiveAmount: 1 })).toEqual({
+      action: 'paid_raise',
+      chargeAmount: 1,
+    })
+  })
 })

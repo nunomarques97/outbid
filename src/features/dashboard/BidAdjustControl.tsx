@@ -47,8 +47,8 @@ export function BidAdjustControl({ currentAmount, leaderAmount, onSubmit, submit
       <div className="mt-3">
         <Slider
           min={0}
-          max={Math.ceil(max / 10) * 10}
-          step={10}
+          max={Math.ceil(max)}
+          step={1}
           value={[value]}
           onValueChange={([v]) => setValue(v)}
         />

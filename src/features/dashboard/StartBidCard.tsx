@@ -28,8 +28,10 @@ export function StartBidCard({
 }: StartBidCardProps) {
   const hasLeader = leaderAmount > 0
   // A helpful starting point, not a rule — the server has no minimum beyond
-  // "greater than zero" (place_bid), the user can drag this anywhere.
-  const suggestedStart = hasLeader ? leaderAmount + 10 : 50
+  // "greater than zero" (place_bid), the user can drag this anywhere. With
+  // no leader, €1 is the true minimum spend to hold sponsored visibility —
+  // default to it directly rather than an arbitrary higher suggestion.
+  const suggestedStart = hasLeader ? leaderAmount + 1 : 1
   const [value, setValue] = useState(suggestedStart)
   const willLead = value > leaderAmount
 
@@ -60,8 +62,8 @@ export function StartBidCard({
         <div className="mt-3">
           <Slider
             min={0}
-            max={Math.ceil((Math.max(suggestedStart, leaderAmount) * 1.6) / 10) * 10}
-            step={10}
+            max={Math.ceil(Math.max(suggestedStart, leaderAmount) * 1.6)}
+            step={1}
             value={[value]}
             onValueChange={([v]) => setValue(v)}
           />
