@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Rocket } from 'lucide-react'
+import { Rocket, Loader2 } from 'lucide-react'
 import { BidAmountControl } from '@/features/dashboard/BidAmountControl'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
@@ -77,7 +77,7 @@ export function StartBidCard({
           disabled={submitting || value <= 0}
           onClick={() => onSubmit(value)}
         >
-          <Rocket className="h-3.5 w-3.5" />
+          {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Rocket className="h-3.5 w-3.5" />}
           {submitting ? 'Placing bid…' : 'Start bidding'}
         </Button>
       </div>

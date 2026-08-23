@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Loader2 } from 'lucide-react'
 import { BidAmountControl } from '@/features/dashboard/BidAmountControl'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
@@ -66,6 +67,7 @@ export function BidAdjustControl({ currentAmount, leaderAmount, onSubmit, submit
         disabled={submitting || isLowering}
         onClick={() => onSubmit(value)}
       >
+        {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
         {buttonLabel}
       </Button>
     </div>
