@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowRight, TrendingUp, Shuffle, ChevronDown, ChevronUp } from 'lucide-react'
-import { buttonVariants } from '@/components/ui/button'
+import { ArrowRight, TrendingUp, Shuffle, ChevronDown, ChevronUp, Rocket } from 'lucide-react'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { AuthDialog } from '@/features/auth/AuthDialog'
 import { useAllCompanies, useCategories, usePlacements, useActiveBids } from '@/lib/supabase/hooks'
 import { getGlobalPlacement } from '@/lib/supabase/queries'
 import { getTopBidders, type TopBidderEntry } from '@/lib/ranking'
 import { formatCurrency } from '@/lib/utils'
+import { useBidCta } from './useBidCta'
 
 const HERO_STATIC_COUNT = 3
 const HERO_MARQUEE_MAX = 20
@@ -29,6 +31,7 @@ export function Hero() {
   const placementsQuery = usePlacements()
   const bidsQuery = useActiveBids()
   const [expanded, setExpanded] = useState(false)
+  const bidCta = useBidCta()
 
   const companies = companiesQuery.data ?? []
   const globalPlacement = getGlobalPlacement(placementsQuery.data ?? [])
@@ -81,6 +84,9 @@ export function Hero() {
             <Link to="/dashboard" className={buttonVariants({ variant: 'secondary', size: 'lg' })}>
               For Businesses
             </Link>
+            <Button type="button" variant="sponsored" size="lg" onClick={bidCta.handleClick}>
+              <Rocket className="h-4 w-4" /> Bid for placement
+            </Button>
             <button
               type="button"
               onClick={handleRateRandomCompany}
@@ -90,6 +96,13 @@ export function Hero() {
               <Shuffle className="h-3.5 w-3.5" /> Rate a random company
             </button>
           </div>
+
+          <AuthDialog
+            open={bidCta.authOpen}
+            onOpenChange={bidCta.setAuthOpen}
+            title="Sign in to bid for placement"
+            description="Sign in or create an account, then set up your company to start bidding on Repcastr."
+          />
           <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-3 text-sm text-fg-muted">
             {companiesQuery.data !== undefined && (
               <span><strong className="font-numeral text-fg">{companies.length}</strong> companies ranked</span>

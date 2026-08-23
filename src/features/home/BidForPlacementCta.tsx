@@ -1,11 +1,7 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Rocket } from 'lucide-react'
-import { useAuth } from '@/features/auth/useAuth'
-import { useMyCompany } from '@/lib/supabase/hooks'
 import { AuthDialog } from '@/features/auth/AuthDialog'
 import { Button } from '@/components/ui/button'
-import { getBidCtaDestination } from '@/lib/advertiserRouting'
+import { useBidCta } from './useBidCta'
 
 /**
  * Sits directly below Top Bidders — the moment a visitor has just seen who's
@@ -20,19 +16,7 @@ import { getBidCtaDestination } from '@/lib/advertiserRouting'
  * mount — see CreateDealCta's ?tab=deals for the established precedent).
  */
 export function BidForPlacementCta() {
-  const { user, isConfigured } = useAuth()
-  const companyQuery = useMyCompany()
-  const navigate = useNavigate()
-  const [authOpen, setAuthOpen] = useState(false)
-
-  function handleClick() {
-    const destination = getBidCtaDestination({ signedIn: isConfigured && Boolean(user), hasCompany: Boolean(companyQuery.data) })
-    if (destination === 'auth') {
-      setAuthOpen(true)
-      return
-    }
-    navigate(destination === 'dashboard-bids' ? '/dashboard?tab=bids' : '/dashboard/new')
-  }
+  const { handleClick, authOpen, setAuthOpen } = useBidCta()
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
