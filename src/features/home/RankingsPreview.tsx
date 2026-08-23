@@ -1,13 +1,23 @@
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import * as Icons from 'lucide-react'
+import type { Company } from '@/mocks/types'
 import { useCategories, useAllCompanies, usePlacements, useActiveBids, useAllCompanyRatingSummaries } from '@/lib/supabase/hooks'
-import { getGlobalPlacement } from '@/lib/supabase/queries'
+import { getGlobalPlacement, type CompanyRatingSummary } from '@/lib/supabase/queries'
 import { getCategoryRanking, getTopCategoriesByBidTotal, CATEGORY_SPONSORED_SLOTS } from '@/lib/ranking'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { CompanyRatingInline } from '@/features/reviews/CompanyRatingInline'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
+
+// Ranks 1-2 stay static; ranks 3-7 (when present) auto-scroll in a looping
+// vertical marquee instead of being cut off entirely — same "static head +
+// looping tail" pattern as Hero's top-bidders panel (see Hero.tsx), just
+// without its "Show all" toggle since this is a homepage preview, not the
+// primary place to browse a category's full ranking (that's /categories/:slug).
+const STATIC_ORGANIC_COUNT = 2
+const MARQUEE_ORGANIC_MAX = 7
 
 export function RankingsPreview() {
   const categoriesQuery = useCategories()
@@ -56,7 +66,8 @@ export function RankingsPreview() {
             ? getCategoryRanking(companies, bids, globalPlacement.id, category.id, CATEGORY_SPONSORED_SLOTS)
             : { sponsored: [], organic: [] }
           const topSponsoredCompany = sponsored[0] ? companies.find((c) => c.id === sponsored[0].companyId) : undefined
-          const topOrganic = organic.slice(0, 2)
+          const topOrganic = organic.slice(0, STATIC_ORGANIC_COUNT)
+          const marqueeOrganic = organic.slice(STATIC_ORGANIC_COUNT, MARQUEE_ORGANIC_MAX)
 
           return (
             <div
@@ -85,18 +96,35 @@ export function RankingsPreview() {
                   </Link>
                 )}
                 {topOrganic.map(({ company }, i) => (
-                  <Link
+                  <OrganicMiniRow
                     key={company.id}
-                    to={`/companies/${company.slug}`}
-                    className="group flex items-center gap-2.5 rounded-lg px-3 py-1 transition-colors hover:bg-surface-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
-                  >
-                    <span className="font-numeral w-3 text-center text-xs text-organic">{i + 1}</span>
-                    <CompanyAvatar initials={company.initials} color={company.logoColor} logoUrl={company.logoUrl} size="sm" />
-                    <span className="flex-1 truncate text-sm text-fg-muted group-hover:text-fg">{company.name}</span>
-                    {company.isVerified && <VerifiedBadge size="sm" />}
-                    <CompanyRatingInline summary={ratingSummariesQuery.data?.get(company.id)} className="shrink-0" />
-                  </Link>
+                    rank={i + 1}
+                    company={company}
+                    ratingSummary={ratingSummariesQuery.data?.get(company.id)}
+                  />
                 ))}
+
+                {marqueeOrganic.length > 0 && (
+                  <div className="relative mt-0.5 h-[136px] overflow-hidden">
+                    <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-3 bg-gradient-to-b from-surface to-transparent" />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-3 bg-gradient-to-t from-surface to-transparent" />
+                    <motion.div
+                      className="flex flex-col gap-2"
+                      animate={{ y: ['0%', '-50%'] }}
+                      transition={{ duration: marqueeOrganic.length * 2.2, repeat: Infinity, ease: 'linear' }}
+                    >
+                      {[...marqueeOrganic, ...marqueeOrganic].map((entry, i) => (
+                        <OrganicMiniRow
+                          key={`${entry.company.id}-${i}`}
+                          rank={STATIC_ORGANIC_COUNT + (i % marqueeOrganic.length) + 1}
+                          company={entry.company}
+                          ratingSummary={ratingSummariesQuery.data?.get(entry.company.id)}
+                        />
+                      ))}
+                    </motion.div>
+                  </div>
+                )}
+
                 {!topSponsoredCompany && topOrganic.length === 0 && (
                   <p className="px-3 py-1 text-sm text-fg-subtle">No companies here yet.</p>
                 )}
@@ -106,5 +134,28 @@ export function RankingsPreview() {
         })}
       </div>
     </section>
+  )
+}
+
+function OrganicMiniRow({
+  rank,
+  company,
+  ratingSummary,
+}: {
+  rank: number
+  company: Company
+  ratingSummary: CompanyRatingSummary | undefined
+}) {
+  return (
+    <Link
+      to={`/companies/${company.slug}`}
+      className="group flex items-center gap-2.5 rounded-lg px-3 py-1 transition-colors hover:bg-surface-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+    >
+      <span className="font-numeral w-3 text-center text-xs text-organic">{rank}</span>
+      <CompanyAvatar initials={company.initials} color={company.logoColor} logoUrl={company.logoUrl} size="sm" />
+      <span className="flex-1 truncate text-sm text-fg-muted group-hover:text-fg">{company.name}</span>
+      {company.isVerified && <VerifiedBadge size="sm" />}
+      <CompanyRatingInline summary={ratingSummary} className="shrink-0" />
+    </Link>
   )
 }
