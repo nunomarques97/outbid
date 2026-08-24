@@ -4,8 +4,19 @@ export interface RankedBid extends Bid {
   rank: number
 }
 
-/** How many sponsored spots every category shows — a single shared constant rather than a per-category placement config, now that sponsorship is driven by one global bid, not a per-category placement (see getCategoryRanking). */
-export const CATEGORY_SPONSORED_SLOTS = 3
+/**
+ * How many of a category's eligible companies count as "sponsored". Left
+ * uncapped rather than an arbitrary display limit like the old 3-per-
+ * category-placement model (pre Phase 34): the DB's own global_sponsored
+ * placement already has max_sponsored_slots=9999, i.e. "no real cap" is the
+ * actual product rule now that every company holds at most one global bid.
+ * A company with any active bid eligible in a category is sponsored there,
+ * full stop — rank position (1st, 2nd, 3rd, ...) is a separate concern from
+ * sponsored status, and callers must never truncate this to fewer than
+ * "however many companies actually have an active bid" or a real sponsor
+ * silently loses its sponsored badge (see getCategoryRanking).
+ */
+export const CATEGORY_SPONSORED_SLOTS = Infinity
 
 /**
  * Ordered active bids for a placement, highest amount first. The tie-break

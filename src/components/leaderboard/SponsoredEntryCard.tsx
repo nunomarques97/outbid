@@ -15,12 +15,21 @@ interface SponsoredEntryCardProps {
 }
 
 export function SponsoredEntryCard({ company, rank, bidAmount, ratingSummary }: SponsoredEntryCardProps) {
+  // Every sponsored row gets the same badge and border treatment regardless
+  // of rank — rank position and sponsored status are separate signals, and
+  // #2/#3/#4+ must never look like an ordinary organic row. #1 alone gets a
+  // touch more visual weight (stronger border/glow) so the leader still
+  // reads as the leader, without making every other sponsored row look
+  // identical to organic or muting its own sponsored badge.
+  const isLeader = rank === 1
   return (
     <Link
       to={`/companies/${company.slug}`}
       className={cn(
-        'group flex items-center gap-4 rounded-xl border border-sponsored/30 bg-surface p-4 transition-all',
-        'shadow-glow-gold hover:border-sponsored/60 hover:-translate-y-0.5',
+        'group flex items-center gap-4 rounded-xl border bg-surface p-4 transition-all hover:-translate-y-0.5',
+        isLeader
+          ? 'border-sponsored/50 shadow-glow-gold hover:border-sponsored/70'
+          : 'border-sponsored/25 hover:border-sponsored/50 hover:shadow-glow-gold',
       )}
     >
       <span className="font-numeral w-6 shrink-0 text-center text-xl text-sponsored">{rank}</span>

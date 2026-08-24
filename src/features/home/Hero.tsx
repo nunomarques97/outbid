@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowRight, TrendingUp, Shuffle, ChevronDown, ChevronUp, Rocket } from 'lucide-react'
@@ -15,6 +15,8 @@ import { useBidCta } from './useBidCta'
 
 const HERO_STATIC_COUNT = 3
 const HERO_MARQUEE_MAX = 20
+/** The looping panel's fixed visible height — also what decides, by actual measurement, whether looping is needed at all (see needsScroll below). */
+const MARQUEE_HEIGHT_PX = 136
 
 /**
  * Purely decorative — abstract bar heights suggesting a competitive
@@ -33,6 +35,8 @@ export function Hero() {
   const bidsQuery = useActiveBids()
   const [expanded, setExpanded] = useState(false)
   const bidCta = useBidCta()
+  const measureRef = useRef<HTMLDivElement>(null)
+  const [needsScroll, setNeedsScroll] = useState(false)
 
   const companies = companiesQuery.data ?? []
   const globalPlacement = getGlobalPlacement(placementsQuery.data ?? [])
@@ -41,6 +45,22 @@ export function Hero() {
     : []
   const staticTop = allTopBidders.slice(0, HERO_STATIC_COUNT)
   const marqueeRest = allTopBidders.slice(HERO_STATIC_COUNT)
+
+  // Measures the SAME rows laid out plainly (via an invisible copy) against
+  // the panel's fixed height, so the looping/fading treatment below only
+  // ever appears when there's genuinely more content than fits — never
+  // because "more than N companies" happens to be true today. With few
+  // enough leftover bidders to fit, this stays false and they're just shown
+  // plainly, no animation, no "impression of more to scroll" when there
+  // isn't any.
+  useLayoutEffect(() => {
+    const el = measureRef.current
+    if (!el) {
+      setNeedsScroll(false)
+      return
+    }
+    setNeedsScroll(el.scrollHeight > MARQUEE_HEIGHT_PX + 1)
+  }, [marqueeRest.length])
 
   function handleRateRandomCompany() {
     if (companies.length === 0) return
@@ -142,56 +162,80 @@ export function Hero() {
                 ))}
               </div>
 
-              {marqueeRest.length > 0 && !expanded && (
-                <div className="relative mt-2.5 h-[136px] overflow-hidden">
-                  <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-4 bg-gradient-to-b from-surface to-transparent" />
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-4 bg-gradient-to-t from-surface to-transparent" />
-                  <motion.div
-                    className="flex flex-col gap-2.5"
-                    animate={{ y: ['0%', '-50%'] }}
-                    transition={{ duration: marqueeRest.length * 2.2, repeat: Infinity, ease: 'linear' }}
-                  >
-                    {[...marqueeRest, ...marqueeRest].map((entry, i) => (
-                      <div
-                        key={`${entry.company.id}-${i}`}
-                        className="flex items-center gap-3 rounded-lg border border-border bg-surface-raised/60 p-2.5"
-                      >
+              {marqueeRest.length > 0 && (
+                <div className="relative">
+                  {/* Invisible measuring copy — never shown, exists only so the
+                      layout effect above can compare its real height against
+                      MARQUEE_HEIGHT_PX and decide whether looping is needed. */}
+                  <div ref={measureRef} className="invisible absolute inset-x-0 top-0 flex flex-col gap-2.5" aria-hidden="true">
+                    {marqueeRest.map((entry) => (
+                      <div key={entry.company.id} className="flex items-center gap-3 rounded-lg border border-border p-2.5">
                         <BidderRow entry={entry} compact />
                       </div>
                     ))}
-                  </motion.div>
-                </div>
-              )}
+                  </div>
 
-              {expanded && marqueeRest.length > 0 && (
-                <div className="mt-2.5 flex max-h-[280px] flex-col gap-2.5 overflow-y-auto pr-1">
-                  {marqueeRest.map((entry) => (
-                    <div
-                      key={entry.company.id}
-                      className="flex items-center gap-3 rounded-lg border border-border bg-surface-raised/60 p-2.5"
-                    >
-                      <BidderRow entry={entry} compact />
+                  {!needsScroll ? (
+                    <div className="mt-2.5 flex flex-col gap-2.5">
+                      {marqueeRest.map((entry) => (
+                        <div
+                          key={entry.company.id}
+                          className="flex items-center gap-3 rounded-lg border border-border bg-surface-raised/60 p-2.5"
+                        >
+                          <BidderRow entry={entry} compact />
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {marqueeRest.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setExpanded((v) => !v)}
-                  className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-semibold text-fg-muted transition-colors hover:text-fg"
-                >
-                  {expanded ? (
-                    <>
-                      Show less <ChevronUp className="h-3.5 w-3.5" />
-                    </>
+                  ) : !expanded ? (
+                    <div className="relative mt-2.5 h-[136px] overflow-hidden">
+                      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-4 bg-gradient-to-b from-surface to-transparent" />
+                      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-4 bg-gradient-to-t from-surface to-transparent" />
+                      <motion.div
+                        className="flex flex-col gap-2.5"
+                        animate={{ y: ['0%', '-50%'] }}
+                        transition={{ duration: marqueeRest.length * 2.2, repeat: Infinity, ease: 'linear' }}
+                      >
+                        {[...marqueeRest, ...marqueeRest].map((entry, i) => (
+                          <div
+                            key={`${entry.company.id}-${i}`}
+                            className="flex items-center gap-3 rounded-lg border border-border bg-surface-raised/60 p-2.5"
+                          >
+                            <BidderRow entry={entry} compact />
+                          </div>
+                        ))}
+                      </motion.div>
+                    </div>
                   ) : (
-                    <>
-                      Show all {allTopBidders.length} <ChevronDown className="h-3.5 w-3.5" />
-                    </>
+                    <div className="mt-2.5 flex max-h-[280px] flex-col gap-2.5 overflow-y-auto pr-1">
+                      {marqueeRest.map((entry) => (
+                        <div
+                          key={entry.company.id}
+                          className="flex items-center gap-3 rounded-lg border border-border bg-surface-raised/60 p-2.5"
+                        >
+                          <BidderRow entry={entry} compact />
+                        </div>
+                      ))}
+                    </div>
                   )}
-                </button>
+
+                  {needsScroll && (
+                    <button
+                      type="button"
+                      onClick={() => setExpanded((v) => !v)}
+                      className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-semibold text-fg-muted transition-colors hover:text-fg"
+                    >
+                      {expanded ? (
+                        <>
+                          Show less <ChevronUp className="h-3.5 w-3.5" />
+                        </>
+                      ) : (
+                        <>
+                          Show all {allTopBidders.length} <ChevronDown className="h-3.5 w-3.5" />
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
               )}
             </>
           )}

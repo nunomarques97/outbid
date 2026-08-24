@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { Crown } from 'lucide-react'
+import { Crown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useCategories, useAllCompanies, usePlacements, useActiveBids } from '@/lib/supabase/hooks'
 import { getGlobalPlacement } from '@/lib/supabase/queries'
 import { getTopBidders, splitTopBiddersForHomepage, type TopBidderEntry } from '@/lib/ranking'
+import { useHorizontalOverflow } from '@/hooks/useHorizontalOverflow'
 import type { Category } from '@/mocks/types'
 import { CompanyAvatar } from '@/components/ui/avatar'
 import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
@@ -74,24 +75,67 @@ export function TopBiddersSection() {
           </div>
 
           {more.length > 0 && (
-            <div className="mt-6">
-              <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-fg-muted">More bidders</h3>
-              <div className="flex gap-3 overflow-x-auto pb-1">
-                {more.map((entry, i) => (
-                  <BidderCard
-                    key={entry.company.id}
-                    entry={entry}
-                    rank={HOMEPAGE_PRIMARY_COUNT + i + 1}
-                    categories={categories}
-                    compact
-                  />
-                ))}
-              </div>
-            </div>
+            <MoreBiddersRow entries={more} categories={categories} rankOffset={HOMEPAGE_PRIMARY_COUNT} />
           )}
         </>
       )}
     </section>
+  )
+}
+
+/**
+ * Overflow-aware — arrows render only when this row's content is actually
+ * wider than its box (see useHorizontalOverflow). With few enough entries to
+ * fit on screen, this degrades to a plain wrapping row with no carousel
+ * chrome at all; the same code scales to any future entry count without a
+ * hardcoded item threshold deciding when navigation should exist.
+ */
+function MoreBiddersRow({
+  entries,
+  categories,
+  rankOffset,
+}: {
+  entries: TopBidderEntry[]
+  categories: Category[]
+  rankOffset: number
+}) {
+  const { ref, hasOverflow, canScrollPrev, canScrollNext, scrollByPage } = useHorizontalOverflow<HTMLDivElement>([
+    entries.length,
+  ])
+
+  return (
+    <div className="mt-6">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-xs font-bold uppercase tracking-widest text-fg-muted">More bidders</h3>
+        {hasOverflow && (
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              aria-label="Previous bidders"
+              disabled={!canScrollPrev}
+              onClick={() => scrollByPage('prev')}
+              className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-fg-muted transition-colors hover:border-brand/30 hover:text-fg disabled:pointer-events-none disabled:opacity-30"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              aria-label="Next bidders"
+              disabled={!canScrollNext}
+              onClick={() => scrollByPage('next')}
+              className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-fg-muted transition-colors hover:border-brand/30 hover:text-fg disabled:pointer-events-none disabled:opacity-30"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
+      <div ref={ref} className="flex gap-3 overflow-x-auto scroll-smooth pb-1">
+        {entries.map((entry, i) => (
+          <BidderCard key={entry.company.id} entry={entry} rank={rankOffset + i + 1} categories={categories} compact />
+        ))}
+      </div>
+    </div>
   )
 }
 

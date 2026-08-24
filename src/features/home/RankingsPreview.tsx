@@ -23,6 +23,13 @@ import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
 const STATIC_ORGANIC_COUNT = 2
 const MARQUEE_ORGANIC_MAX = 7
 const CATEGORY_GROUP_SIZE = 3
+// A compact homepage teaser can't show every sponsored company in a category
+// without the card ballooning — this caps how many get the prominent
+// sponsored treatment HERE specifically (a display-space decision for this
+// widget only). It never hides that a company is sponsored: every one of
+// them still gets the full sponsored badge/rank treatment on the category's
+// own page (see LeaderboardList), which is uncapped.
+const PREVIEW_SPONSORED_MAX = 2
 
 export function RankingsPreview() {
   const categoriesQuery = useCategories()
@@ -109,7 +116,11 @@ export function RankingsPreview() {
           const { sponsored, organic } = globalPlacement
             ? getCategoryRanking(companies, bids, globalPlacement.id, category.id, CATEGORY_SPONSORED_SLOTS)
             : { sponsored: [], organic: [] }
-          const topSponsoredCompany = sponsored[0] ? companies.find((c) => c.id === sponsored[0].companyId) : undefined
+          const sponsoredPreview = sponsored
+            .slice(0, PREVIEW_SPONSORED_MAX)
+            .map((bid) => ({ bid, company: companies.find((c) => c.id === bid.companyId) }))
+            .filter((s): s is { bid: (typeof sponsored)[number]; company: Company } => Boolean(s.company))
+          const hiddenSponsoredCount = sponsored.length - sponsoredPreview.length
           const topOrganic = organic.slice(0, STATIC_ORGANIC_COUNT)
           const marqueeOrganic = organic.slice(STATIC_ORGANIC_COUNT, MARQUEE_ORGANIC_MAX)
 
@@ -127,24 +138,32 @@ export function RankingsPreview() {
                 <Icons.ChevronRight className="ml-auto h-4 w-4 text-fg-subtle opacity-0 transition-opacity group-hover:opacity-100" />
               </Link>
               <div className="flex flex-col gap-2">
-                {topSponsoredCompany && (
-                  <div className="flex items-center gap-1.5 rounded-lg border border-sponsored/25 bg-surface-raised pl-3 pr-1.5 py-2 shadow-glow-gold transition-colors hover:border-sponsored/50">
+                {sponsoredPreview.map(({ bid, company }) => (
+                  <div
+                    key={company.id}
+                    className="flex items-center gap-1.5 rounded-lg border border-sponsored/25 bg-surface-raised pl-3 pr-1.5 py-2 shadow-glow-gold transition-colors hover:border-sponsored/50"
+                  >
+                    <span className="font-numeral w-3 shrink-0 text-center text-xs text-sponsored">{bid.rank}</span>
                     <Link
-                      to={`/companies/${topSponsoredCompany.slug}`}
+                      to={`/companies/${company.slug}`}
                       className="group flex min-w-0 flex-1 items-center gap-2.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
                     >
-                      <CompanyAvatar initials={topSponsoredCompany.initials} color={topSponsoredCompany.logoColor} logoUrl={topSponsoredCompany.logoUrl} size="sm" />
-                      <span className="min-w-0 flex-1 truncate text-sm text-fg group-hover:underline">{topSponsoredCompany.name}</span>
-                      {topSponsoredCompany.isVerified && <VerifiedBadge size="sm" />}
-                      <CompanyRatingInline summary={ratingSummariesQuery.data?.get(topSponsoredCompany.id)} className="shrink-0" />
+                      <CompanyAvatar initials={company.initials} color={company.logoColor} logoUrl={company.logoUrl} size="sm" />
+                      <span className="min-w-0 flex-1 truncate text-sm text-fg group-hover:underline">{company.name}</span>
+                      {company.isVerified && <VerifiedBadge size="sm" />}
+                      <CompanyRatingInline summary={ratingSummariesQuery.data?.get(company.id)} className="shrink-0" />
                       <SponsoredBadge size="sm" />
                     </Link>
-                    <CompanyExternalLinkButton
-                      website={topSponsoredCompany.website}
-                      companyName={topSponsoredCompany.name}
-                      className="h-7 w-7"
-                    />
+                    <CompanyExternalLinkButton website={company.website} companyName={company.name} className="h-7 w-7" />
                   </div>
+                ))}
+                {hiddenSponsoredCount > 0 && (
+                  <Link
+                    to={`/categories/${category.slug}`}
+                    className="px-3 py-1 text-xs text-sponsored hover:underline"
+                  >
+                    +{hiddenSponsoredCount} more sponsored →
+                  </Link>
                 )}
                 {topOrganic.map(({ company }, i) => (
                   <OrganicMiniRow
@@ -176,7 +195,7 @@ export function RankingsPreview() {
                   </div>
                 )}
 
-                {!topSponsoredCompany && topOrganic.length === 0 && (
+                {sponsoredPreview.length === 0 && topOrganic.length === 0 && (
                   <p className="px-3 py-1 text-sm text-fg-subtle">No companies here yet.</p>
                 )}
               </div>
