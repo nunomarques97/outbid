@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { StyleToggle } from './StyleToggle'
 
 export function Footer() {
   return (
@@ -31,6 +32,7 @@ export function Footer() {
               <span className="mx-1">·</span>
               <span className="h-1.5 w-1.5 rounded-full bg-organic" /> Community ranked
             </p>
+            <StyleToggle />
           </div>
         </div>
       </div>

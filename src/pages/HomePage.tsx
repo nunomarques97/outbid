@@ -1,29 +1,9 @@
-import { Hero } from '@/features/home/Hero'
-import { TopBiddersSection } from '@/features/home/TopBiddersSection'
-import { BidForPlacementCta } from '@/features/home/BidForPlacementCta'
-import { CreateCompanyCta } from '@/features/home/CreateCompanyCta'
-import { HowItWorks } from '@/features/home/HowItWorks'
-import { SponsoredMechanicShowcase } from '@/features/home/SponsoredMechanicShowcase'
-import { RankingsPreview } from '@/features/home/RankingsPreview'
-import { TrendingSection } from '@/features/home/TrendingSection'
-import { TopRatedSection } from '@/features/home/TopRatedSection'
-import { BattleOfTheDay } from '@/features/home/BattleOfTheDay'
-import { DealsSection } from '@/features/home/DealsSection'
+import { useVisualStyle } from '@/hooks/useVisualStyle'
+import { NewHomePage } from './NewHomePage'
+import { LegacyHomePage } from './LegacyHomePage'
 
+/** Container: picks which homepage composition to render based on the visual-style preference. All data/business logic is shared — only section choice/order differs between the two views. */
 export function HomePage() {
-  return (
-    <>
-      <Hero />
-      <CreateCompanyCta />
-      <TopBiddersSection />
-      <BidForPlacementCta />
-      <HowItWorks />
-      <SponsoredMechanicShowcase />
-      <RankingsPreview />
-      <TrendingSection />
-      <TopRatedSection />
-      <BattleOfTheDay />
-      <DealsSection />
-    </>
-  )
+  const { style } = useVisualStyle()
+  return style === 'legacy' ? <LegacyHomePage /> : <NewHomePage />
 }

@@ -3,6 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script>
+      // Applied before first paint so a returning visitor who picked
+      // "legacy" never sees a flash of the new default style.
+      try {
+        if (localStorage.getItem('repcastr_visual_style') === 'legacy') {
+          document.documentElement.setAttribute('data-style', 'legacy')
+        }
+      } catch (e) {}
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Repcastr — Discover companies, ranked by real votes</title>
     <meta

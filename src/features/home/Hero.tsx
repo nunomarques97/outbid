@@ -51,14 +51,43 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden border-b border-border">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/* Premium dual-tone glow — brand + sponsored, replacing the old flat coral circle */}
-        <div className="absolute -top-32 left-1/2 h-96 w-[42rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-brand/20 via-sponsored/10 to-transparent blur-3xl" />
-        {/* Abstract ranking bars behind the Top Bidders panel — visual echo of companies competing for placement, no real amounts implied */}
-        <div className="absolute bottom-0 right-[4%] hidden items-end gap-2.5 opacity-[0.14] lg:flex">
+        {/*
+          Two decorative treatments, both always rendered — index.css picks
+          one via the `data-style` attribute the style toggle sets on <html>.
+          Nothing here branches on style in JS.
+        */}
+        <div className="hero-decor-legacy absolute -top-32 left-1/2 h-96 w-[42rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-brand/20 via-sponsored/10 to-transparent blur-3xl" />
+        <div className="hero-decor-legacy absolute bottom-0 right-[4%] hidden items-end gap-2.5 opacity-[0.14] lg:flex">
           {RANKING_BAR_HEIGHTS.map((h, i) => (
             <motion.div
               key={i}
               className="w-3.5 rounded-t-full bg-gradient-to-t from-brand to-sponsored"
+              style={{ height: h }}
+              animate={{ height: [h, h * 1.2, h] }}
+              transition={{ duration: 3.5 + i * 0.25, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 }}
+            />
+          ))}
+        </div>
+
+        {/* New style — a thin radar-target ring and a slow scanline sweep, standing in for the old blurred gradient glow. Crisp lines, no blur/fill. */}
+        <div
+          className="hero-decor-new absolute -right-24 -top-24 h-[34rem] w-[34rem] rounded-full border border-sponsored/25 opacity-60"
+          aria-hidden="true"
+        />
+        <div
+          className="hero-decor-new absolute -right-24 -top-24 h-[34rem] w-[34rem] translate-x-[3rem] translate-y-[3rem] rounded-full border border-sponsored/15 opacity-60"
+          aria-hidden="true"
+        />
+        <div className="hero-decor-new absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sponsored/50 to-transparent" />
+        <div
+          className="hero-decor-new hero-decor-new-scanline absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-organic/[0.05] to-transparent"
+          aria-hidden="true"
+        />
+        <div className="hero-decor-new absolute bottom-0 right-[4%] hidden items-end gap-2.5 opacity-[0.14] lg:flex">
+          {RANKING_BAR_HEIGHTS.map((h, i) => (
+            <motion.div
+              key={i}
+              className="w-3.5 bg-sponsored"
               style={{ height: h }}
               animate={{ height: [h, h * 1.2, h] }}
               transition={{ duration: 3.5 + i * 0.25, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 }}
