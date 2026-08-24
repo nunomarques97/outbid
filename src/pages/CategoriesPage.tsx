@@ -2,12 +2,16 @@ import { Link } from 'react-router-dom'
 import * as Icons from 'lucide-react'
 import { useCategories, useAllCompanies } from '@/lib/supabase/hooks'
 import { LoadingState, ErrorState, EmptyState } from '@/components/shared/QueryStates'
-import { useDocumentTitle } from '@/lib/useDocumentTitle'
+import { useSeo } from '@/lib/useSeo'
 
 export function CategoriesPage() {
   const categoriesQuery = useCategories()
   const companiesQuery = useAllCompanies()
-  useDocumentTitle('Categories')
+  useSeo({
+    title: 'Categories',
+    description: 'Browse every category on Repcastr — from technology and automotive to business services and more, each ranked by real community votes.',
+    canonicalPath: '/categories',
+  })
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">

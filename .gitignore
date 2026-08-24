@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Generated at build time by scripts/generate-sitemap.mjs from live
+# company/category data (npm run seo:generate, wired into npm run build) —
+# always regenerated fresh, never a source-of-truth file to commit.
+/public/sitemap.xml
+/public/llms.txt
+
 # Playwright
 test-results
 playwright-report

@@ -9,7 +9,7 @@ import { LoadingState } from '@/components/shared/QueryStates'
 import { EditProfileDialog } from '@/features/profile/EditProfileDialog'
 import { DeleteAccountDialog } from '@/features/profile/DeleteAccountDialog'
 import { ProfileReviewsSection } from '@/features/profile/ProfileReviewsSection'
-import { useDocumentTitle } from '@/lib/useDocumentTitle'
+import { useSeo } from '@/lib/useSeo'
 
 function formatJoinedDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'long' })
@@ -21,7 +21,17 @@ export function UserProfilePage() {
   const profileQuery = usePublicProfile(username)
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
-  useDocumentTitle(profileQuery.data ? `${profileQuery.data.displayName} (@${profileQuery.data.username})` : undefined)
+  const profile = profileQuery.data
+  useSeo({
+    title: profile ? `${profile.displayName} (@${profile.username})` : undefined,
+    description: profile
+      ? `${profile.displayName}'s reviews and activity on Repcastr — ${profile.reviewCount} review${profile.reviewCount === 1 ? '' : 's'}.`
+      : undefined,
+    canonicalPath: username ? `/users/${username}` : undefined,
+    // A missing row means either "doesn't exist" or "private" — RLS makes
+    // those indistinguishable, and neither should ever be indexed.
+    noindex: !profile || !profile.isPublic,
+  })
 
   if (profileQuery.isLoading) {
     return (
@@ -40,7 +50,6 @@ export function UserProfilePage() {
     )
   }
 
-  const profile = profileQuery.data
   const isOwn = Boolean(user && profile && user.id === profile.id)
 
   // A missing row means either "no profile at this username" or "private,

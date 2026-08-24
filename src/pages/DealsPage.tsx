@@ -2,12 +2,16 @@ import { useState, type ReactNode } from 'react'
 import { useDeals, useAllCompanies, useCategories } from '@/lib/supabase/hooks'
 import { DealCard } from '@/components/shared/DealCard'
 import { LoadingState, ErrorState, EmptyState } from '@/components/shared/QueryStates'
-import { useDocumentTitle } from '@/lib/useDocumentTitle'
+import { useSeo } from '@/lib/useSeo'
 import { cn } from '@/lib/utils'
 
 export function DealsPage() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
-  useDocumentTitle('Deals')
+  useSeo({
+    title: 'Deals',
+    description: 'Live deals and offers from companies across every category on Repcastr, updated as advertisers change theirs.',
+    canonicalPath: '/deals',
+  })
 
   const dealsQuery = useDeals()
   const companiesQuery = useAllCompanies()

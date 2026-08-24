@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { LegalLayout, LegalSection } from '@/components/legal/LegalLayout'
-import { useDocumentTitle } from '@/lib/useDocumentTitle'
+import { useSeo } from '@/lib/useSeo'
 import { SUPPORT_EMAIL, PRIVACY_EMAIL } from '@/lib/contact'
 
 const SECTIONS = [
@@ -20,7 +20,7 @@ const SECTIONS = [
 ]
 
 export function PrivacyPage() {
-  useDocumentTitle('Privacy Policy')
+  useSeo({ title: 'Privacy Policy', canonicalPath: '/privacy' })
   return (
     <LegalLayout
       title="Privacy Policy"

@@ -4,3 +4,5 @@ Disallow: /dashboard
 Disallow: /dashboard/new
 Disallow: /auth/callback
 Disallow: /saved
+
+Sitemap: https://repcastr.com/sitemap.xml

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { LegalLayout, LegalSection } from '@/components/legal/LegalLayout'
-import { useDocumentTitle } from '@/lib/useDocumentTitle'
+import { useSeo } from '@/lib/useSeo'
 import { SUPPORT_EMAIL, PRIVACY_EMAIL } from '@/lib/contact'
 
 const SECTIONS = [
@@ -23,7 +23,7 @@ const SECTIONS = [
 ]
 
 export function TermsPage() {
-  useDocumentTitle('Terms of Service')
+  useSeo({ title: 'Terms of Service', canonicalPath: '/terms' })
   return (
     <LegalLayout
       title="Terms of Service"

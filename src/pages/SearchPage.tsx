@@ -16,10 +16,16 @@ import { SaveButton } from '@/components/shared/SaveButton'
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { Input } from '@/components/ui/input'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
+import { useSeo } from '@/lib/useSeo'
+import { buildSearchDescription } from '@/lib/seoContent'
 
 export function SearchPage() {
   const [params, setParams] = useSearchParams()
   const [value, setValue] = useState(params.get('q') ?? '')
+  // Internal search-result pages are excluded from indexing (every query
+  // produces a distinct, near-duplicate URL) while staying crawlable so
+  // link equity still flows to the companies/categories linked from it.
+  useSeo({ title: 'Search', description: buildSearchDescription(value), noindex: true })
 
   const companiesQuery = useAllCompanies()
   const categoriesQuery = useCategories()

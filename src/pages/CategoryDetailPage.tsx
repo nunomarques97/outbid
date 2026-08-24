@@ -15,7 +15,8 @@ import { getCategoryRanking, CATEGORY_SPONSORED_SLOTS } from '@/lib/ranking'
 import { LeaderboardList } from '@/components/leaderboard/LeaderboardList'
 import { RankingExplainer } from '@/components/shared/RankingExplainer'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
-import { useDocumentTitle } from '@/lib/useDocumentTitle'
+import { useSeo } from '@/lib/useSeo'
+import { buildCategoryDescription } from '@/lib/seoContent'
 import { formatCompactNumber } from '@/lib/utils'
 
 export function CategoryDetailPage() {
@@ -26,7 +27,11 @@ export function CategoryDetailPage() {
   // not-found — it's no longer a valid discovery destination, even for an
   // old bookmarked/shared link.
   const category = (categoriesQuery.data ?? []).find((c) => c.slug === slug && !c.isArchived)
-  useDocumentTitle(category?.name)
+  useSeo({
+    title: category?.name,
+    description: category ? buildCategoryDescription(category) : undefined,
+    canonicalPath: slug ? `/categories/${slug}` : undefined,
+  })
 
   if (categoriesQuery.isLoading) return <LoadingState label="Loading category…" />
   if (categoriesQuery.isError) return <ErrorState message="Couldn't load this category." />

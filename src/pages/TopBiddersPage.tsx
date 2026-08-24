@@ -8,7 +8,7 @@ import { SponsoredBadge } from '@/components/shared/SponsoredBadge'
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { Select } from '@/components/ui/select'
 import { LoadingState, ErrorState, EmptyState } from '@/components/shared/QueryStates'
-import { useDocumentTitle } from '@/lib/useDocumentTitle'
+import { useSeo } from '@/lib/useSeo'
 import { formatCurrency } from '@/lib/utils'
 
 /**
@@ -25,7 +25,11 @@ export function TopBiddersPage() {
   const placementsQuery = usePlacements()
   const bidsQuery = useActiveBids()
   const [categoryId, setCategoryId] = useState('')
-  useDocumentTitle('Top Bidders')
+  useSeo({
+    title: 'Top Bidders',
+    description: 'Companies actively bidding for sponsored visibility on Repcastr, ranked by current bid — every bid is public and openly labeled.',
+    canonicalPath: '/top-bidders',
+  })
 
   const loading =
     categoriesQuery.isLoading || companiesQuery.isLoading || placementsQuery.isLoading || bidsQuery.isLoading

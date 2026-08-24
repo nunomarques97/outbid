@@ -28,13 +28,18 @@ import { ReportButton } from '@/features/reports/ReportButton'
 import { ClaimCompanyButton } from '@/features/claims/ClaimCompanyButton'
 import { buttonVariants } from '@/components/ui/button'
 import { LoadingState, ErrorState } from '@/components/shared/QueryStates'
-import { useDocumentTitle } from '@/lib/useDocumentTitle'
+import { useSeo } from '@/lib/useSeo'
+import { buildCompanyDescription } from '@/lib/seoContent'
 import { formatCurrency, formatCompactNumber, cn } from '@/lib/utils'
 
 export function CompanyProfilePage() {
   const { slug } = useParams()
   const companyQuery = useCompany(slug ?? '')
-  useDocumentTitle(companyQuery.data?.name)
+  useSeo({
+    title: companyQuery.data?.name,
+    description: companyQuery.data ? buildCompanyDescription(companyQuery.data) : undefined,
+    canonicalPath: slug ? `/companies/${slug}` : undefined,
+  })
 
   if (companyQuery.isLoading) return <LoadingState label="Loading company…" />
   if (companyQuery.isError) return <ErrorState message="Couldn't load this company." />
